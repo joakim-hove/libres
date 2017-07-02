@@ -25,8 +25,9 @@ class SimulationContextTest(ExtendedTestCase):
             size = 4
             first_half = initializeCase(ert, "first_half", size)
             other_half = initializeCase(ert, "other_half", size)
-
-            simulation_context = SimulationContext(ert, size)
+            enkf_fs_manager = ert.getEnkfFsManager()
+            fs = enkf_fs_manager.getCurrentFileSystem( )
+            simulation_context = SimulationContext(ert, fs, fs, size, 0)
 
             for iens in range(size):
                 if iens % 2 == 0:
