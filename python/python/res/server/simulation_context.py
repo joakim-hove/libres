@@ -1,15 +1,15 @@
-from ecl.util import ArgPack, CThreadPool
+from ecl.util import ArgPack, CThreadPool,BoolVector
 
 from res.job_queue import JobQueueManager
 
 from res.enkf import ENKF_LIB
 from res.enkf.ert_run_context import ErtRunContext
 from res.enkf.run_arg import RunArg
-from res.enkf.enums import EnkfRunType
+from res.enkf.enums import EnkfRunType, EnkfInitModeEnum
 
 
 class SimulationContext(object):
-    def __init__(self, ert, init_fs, target_fs, size, itr , verbose=False):
+    def __init__(self, ert, init_fs, result_fs, size, itr , verbose=False):
         self._ert = ert
         """ :type: res.enkf.EnKFMain """
         self._size = size
@@ -26,7 +26,8 @@ class SimulationContext(object):
 
         subst_list = self._ert.getDataKW( )
         path_fmt = self._ert.getModelConfig().getRunpathFormat()
-        self._run_context = ErtRunContext( EnkfRunType.ENSEMBLE_EXPERIMENT, init_fs, target_fs, mask, path_fmt, subst_list, ier)
+        mask = BoolVector( initial_size = size, default_value = True )
+        self._run_context = ErtRunContext( EnkfRunType.ENSEMBLE_EXPERIMENT, init_fs, result_fs, None, mask, path_fmt, subst_list, itr)
 
 
     def addSimulation(self, iens):
@@ -94,3 +95,6 @@ class SimulationContext(object):
         fmt = '%s, #running = %d, #success = %d, #failed = %d, #waiting = %d'
         fmt =  fmt % (running, numRunn, numSucc, numFail, numWait)
         return 'SimulationContext(%s)' % fmt
+
+    def get_result_fs(self):
+        return self._run_context.get_result_fs( )
