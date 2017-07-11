@@ -1367,7 +1367,7 @@ static void * enkf_main_create_run_path__( enkf_main_type * enkf_main,
 }
 
 void enkf_main_create_run_path(enkf_main_type * enkf_main , const ert_run_context_type * run_context) {
-  init_mode_type init_mode = INIT_CONDITIONAL;
+  init_mode_type init_mode = ert_run_context_get_init_mode( run_context );
 
   enkf_main_init_internalization(enkf_main , init_mode);
   {
@@ -1598,10 +1598,10 @@ void enkf_main_init_run( enkf_main_type * enkf_main, const ert_run_context_type 
   {
     stringlist_type * param_list = ensemble_config_alloc_keylist_from_var_type(enkf_main_get_ensemble_config(enkf_main), PARAMETER );
     enkf_main_initialize_from_scratch(enkf_main ,
-              ert_run_context_get_init_fs( run_context ),
-              param_list ,
-              ert_run_context_get_iactive( run_context ),
-              init_mode);
+                                      ert_run_context_get_init_fs( run_context ),
+                                      param_list ,
+                                      ert_run_context_get_iactive( run_context ),
+                                      init_mode);
     stringlist_free( param_list );
   }
 }
@@ -1804,7 +1804,7 @@ void enkf_main_run_iterated_ES(enkf_main_type * enkf_main,
 
 
 ert_run_context_type * enkf_main_alloc_ert_run_context_ENSEMBLE_EXPERIMENT(const enkf_main_type * enkf_main , enkf_fs_type * fs , bool_vector_type * iactive , int iter) {
-  return ert_run_context_alloc_ENSEMBLE_EXPERIMENT( fs , iactive , model_config_get_runpath_fmt(enkf_main_get_model_config(enkf_main)) , enkf_main_get_data_kw(enkf_main) , iter );
+  return ert_run_context_alloc_ENSEMBLE_EXPERIMENT( fs, fs , iactive , model_config_get_runpath_fmt(enkf_main_get_model_config(enkf_main)) , enkf_main_get_data_kw(enkf_main) , iter );
 }
 
 
@@ -2395,7 +2395,7 @@ int enkf_main_load_from_forward_model_with_fs(enkf_main_type * enkf_main, int it
   int result[ens_size];
   model_config_type * model_config = enkf_main_get_model_config(enkf_main);
 
-  ert_run_context_type * run_context = ert_run_context_alloc_ENSEMBLE_EXPERIMENT( fs , iactive , model_config_get_runpath_fmt( model_config ) , enkf_main_get_data_kw(enkf_main) , iter );
+  ert_run_context_type * run_context = ert_run_context_alloc_ENSEMBLE_EXPERIMENT( fs, fs , iactive , model_config_get_runpath_fmt( model_config ) , enkf_main_get_data_kw(enkf_main) , iter );
   arg_pack_type ** arg_list = util_calloc( ens_size , sizeof * arg_list );
   thread_pool_type * tp     = thread_pool_alloc( 4 , true );  /* num_cpu - HARD coded. */
 

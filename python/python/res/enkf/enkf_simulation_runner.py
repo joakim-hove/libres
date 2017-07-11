@@ -19,7 +19,7 @@ class EnkfSimulationRunner(BaseCClass):
 
     def runSimpleStep(self, job_queue, run_context):
         """ @rtype: int """
-        return self._run_simple_step(job_queue, run_context.get_mask( ), initialization_mode , run_context.get_iter( ))
+        return self._run_simple_step(job_queue, run_context.get_mask( ), run_context.get_init_mode( ) , run_context.get_iter( ))
 
     def createRunPath(self, run_context):
         """ @rtype: bool """

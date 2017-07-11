@@ -7,7 +7,7 @@ from res.enkf.enums import ErtImplType
 from res.enkf.export.custom_kw_collector import CustomKWCollector
 from res.server import ErtRPCClient
 from ecl.test import ExtendedTestCase
-from tests.res.server import RPCServiceContext, initializeCase
+from tests.res.server import RPCServiceContext
 
 
 class RPCStorageTest(ExtendedTestCase):
@@ -53,7 +53,7 @@ class RPCStorageTest(ExtendedTestCase):
 
 
             simulation_count = 10
-            initializeCase(server.ert, "default", simulation_count)
+            #initializeCase(server.ert, "default", simulation_count)
 
             client.storeGlobalData("default", group_name, "PI", 3.1415)
             client.storeGlobalData("default", group_name, "DakotaVersion", "DAKOTA 6.2.0")
@@ -74,7 +74,7 @@ class RPCStorageTest(ExtendedTestCase):
                 self.assertEqual(data["Test:Gradient"][sim_id], gradients[sim_id])
                 self.assertEqual(data["Test:GradientDirection"][sim_id], gradient_directions[sim_id])
 
-
+                
     def test_rpc_storage_with_simulation(self):
         config = self.createTestPath("local/snake_oil_no_data/snake_oil.ert")
 

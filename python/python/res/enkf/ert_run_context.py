@@ -33,6 +33,7 @@ class ErtRunContext(BaseCClass):
     _get_iter           = EnkfPrototype("int ert_run_context_get_iter( ert_run_context )")
     _get_target_fs      = EnkfPrototype("enkf_fs_ref ert_run_context_get_update_target_fs( ert_run_context )")
     _get_result_fs      = EnkfPrototype("enkf_fs_ref ert_run_context_get_result_fs( ert_run_context )")
+    _get_init_mode      = EnkfPrototype("enkf_init_mode_enum ert_run_context_get_init_mode( ert_run_context )")
     
     def __init__(self , run_type , init_fs , result_fs, target_fs , mask , path_fmt , subst_list , itr, init_mode = EnkfInitModeEnum.INIT_CONDITIONAL):
         c_ptr = self._alloc( run_type, init_mode, init_fs , result_fs, target_fs, mask , path_fmt , subst_list, itr)
@@ -105,3 +106,7 @@ class ErtRunContext(BaseCClass):
 
     def get_result_fs(self):
         return self._get_result_fs( )
+
+
+    def get_init_mode(self):
+        return self._get_init_mode( )
