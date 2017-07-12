@@ -1327,7 +1327,7 @@ void enkf_main_isubmit_job( enkf_main_type * enkf_main , run_arg_type * run_arg 
 
 }
 
-void * enkf_main_icreate_run_path( enkf_main_type * enkf_main, run_arg_type * run_arg, bool init) {
+void * enkf_main_icreate_run_path( enkf_main_type * enkf_main, run_arg_type * run_arg, init_mode_type init_mode) {
   enkf_state_type * enkf_state = enkf_main->ensemble[ run_arg_get_iens(run_arg) ];
   {
     runpath_list_type * runpath_list = enkf_main_get_runpath_list(enkf_main);
@@ -1338,8 +1338,7 @@ void * enkf_main_icreate_run_path( enkf_main_type * enkf_main, run_arg_type * ru
                       enkf_state_get_eclbase( enkf_state ));
   }
 
-  if (init) {
-    init_mode_type init_mode = INIT_CONDITIONAL;
+  if (init_mode != INIT_NONE) {
     stringlist_type * param_list = ensemble_config_alloc_keylist_from_var_type(enkf_main_get_ensemble_config(enkf_main), PARAMETER );
     enkf_fs_type * init_fs = run_arg_get_init_fs( run_arg );
     enkf_state_initialize( enkf_state , init_fs , param_list , init_mode);
@@ -1360,7 +1359,7 @@ static void * enkf_main_create_run_path__( enkf_main_type * enkf_main,
   for (iens = 0; iens < active_ens_size; iens++) {
     if (bool_vector_iget(iactive , iens)) {
       run_arg_type * run_arg = ert_run_context_iens_get_arg( run_context , iens);
-      enkf_main_icreate_run_path(enkf_main, run_arg, false);
+      enkf_main_icreate_run_path(enkf_main, run_arg, INIT_NONE);
     }
   }
   return NULL;

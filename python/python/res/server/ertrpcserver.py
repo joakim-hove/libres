@@ -10,6 +10,8 @@ except ImportError:
 
 
 from ecl import Version
+from ecl.util import BoolVector
+
 from res.enkf import EnKFMain, NodeId
 from res.enkf.config import CustomKWConfig
 from res.enkf.data import EnkfNode, CustomKW
@@ -141,6 +143,7 @@ class ErtRPCServer(SimpleXMLRPCServer):
         fs_manager = self.ert.getEnkfFsManager()
         init_fs = fs_manager.getFileSystem(initialization_case_name)
         result_fs = fs_manager.getFileSystem(result_case_name)
+        mask = BoolVector( initial_size = simulation_count, default_value = True )
         with self._session.lock:
             if not self.isRunning():
                 self._session.simulation_context = None
@@ -148,8 +151,10 @@ class ErtRPCServer(SimpleXMLRPCServer):
 
                 self.ert.addDataKW("<WPRO_RUN_COUNT>", str(self._session.batch_number))
                 self.ert.addDataKW("<ELCO_RUN_COUNT>", str(self._session.batch_number))
-                self._session.simulation_context = SimulationContext(self.ert, init_fs, result_fs, simulation_count, self._session.batch_number, verbose=self._verbose_queue)
+                self._session.simulation_context = SimulationContext(self.ert, init_fs, result_fs, mask , self._session.batch_number, verbose=self._verbose_queue)
                 self._session.batch_number += 1
+
+
                 
 
     def _getInitializationCase(self):
@@ -168,6 +173,7 @@ class ErtRPCServer(SimpleXMLRPCServer):
         
         result_fs = self._session.simulation_context.get_result_fs( )
         self._initializeRealization(result_fs, geo_id, iens, keywords)
+        self.ert.createRunpath( self._session.simulation_context.get_run_context( ) , iens = iens)
         self._session.simulation_context.addSimulation(iens)
 
 
