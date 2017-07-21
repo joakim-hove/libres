@@ -12,13 +12,10 @@ from res.server import SimulationContext
 
 class SimulationContextTest(ExtendedTestCase):
 
-    def setUp(self):
-        self.config1 = self.createTestPath("local/snake_oil_no_data/snake_oil.ert")
-        self.config2 = self.createTestPath("local/snake_oil_no_data/snake_oil_GEO_ID.ert")
-
 
     def test_simulation_context(self):
-        with ErtTestContext("ert/server/rpc/simulation_context", self.config1) as test_context:
+        config_file = self.createTestPath("local/snake_oil_no_data/snake_oil.ert")
+        with ErtTestContext("ert/server/rpc/simulation_context", config_file) as test_context:
             ert = test_context.getErt()
 
             size = 4

@@ -27,7 +27,8 @@ class SimulationContext(object):
         subst_list = self._ert.getDataKW( )
         path_fmt = self._ert.getModelConfig().getRunpathFormat()
         self._run_context = ErtRunContext( EnkfRunType.ENSEMBLE_EXPERIMENT, init_fs, result_fs, None, mask, path_fmt, subst_list, itr)
-
+        self._ert.createRunpath( self._run_context )
+        
         
     def addSimulation(self, iens):
         if iens >= len(self._mask):
