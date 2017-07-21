@@ -1,6 +1,5 @@
 from threading import Thread
 
-from res.enkf import EnkfFsManager, EnkfFs, EnkfVarType
 from res.server import ErtRPCServer
 from res.test import ErtTest
 
