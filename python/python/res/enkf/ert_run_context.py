@@ -23,6 +23,7 @@ class ErtRunContext(BaseCClass):
     TYPE_NAME = "ert_run_context"
     _alloc              = EnkfPrototype("void* ert_run_context_alloc( enkf_run_mode_enum , enkf_init_mode_enum, enkf_fs, enkf_fs , enkf_fs, bool_vector, path_fmt ,subst_list, int)", bind = False)
     _alloc_ensemble_experiment = EnkfPrototype("ert_run_context_obj ert_run_context_alloc_ENSEMBLE_EXPERIMENT( enkf_fs , enkf_fs, bool_vector, path_fmt ,subst_list, int)", bind = False)
+    _alloc_ensemble_smoother = EnkfPrototype("ert_run_context_obj ert_run_context_alloc_SMOOTHER_RUN( enkf_fs , enkf_fs, bool_vector, path_fmt ,subst_list, int)", bind = False)
     _alloc_runpath_list = EnkfPrototype("stringlist_obj ert_run_context_alloc_runpath_list(bool_vector, path_fmt, subst_list, int)", bind = False)
     _alloc_runpath      = EnkfPrototype("char* ert_run_context_alloc_runpath(int, path_fmt, subst_list, int)", bind = False)
     _get_size           = EnkfPrototype("int ert_run_context_get_size( ert_run_context )")
@@ -50,6 +51,20 @@ class ErtRunContext(BaseCClass):
     @classmethod
     def ensemble_experiment(cls, init_fs, result_fs, mask, path_fmt, subst_list , itr):
         run_context = cls._alloc_ensemble_experiment( init_fs , result_fs, mask , path_fmt , subst_list, itr)
+
+        # The C object ert_run_context uses a shared object for the
+        # path_fmt, mask and subst_list objects. We therefor hold on
+        # to a reference here - to inhibt Python GC of these objects.
+        run_context._mask = mask
+        run_context._path_fmt = path_fmt
+        run_context._subst_list = subst_list
+        
+        return run_context
+
+
+    @classmethod
+    def ensemble_smoother(cls, sim_fs, target_fs, mask, path_fmt, subst_list , itr):
+        run_context = cls._alloc_ensemble_smoother( sim_fs , target_fs, mask , path_fmt , subst_list, itr)
 
         # The C object ert_run_context uses a shared object for the
         # path_fmt, mask and subst_list objects. We therefor hold on

@@ -1308,8 +1308,6 @@ void enkf_main_isubmit_job( enkf_main_type * enkf_main , run_arg_type * run_arg 
   arg_pack_append_ptr( callback_arg , enkf_state );
   arg_pack_append_ptr( callback_arg , run_arg );
 
-  printf("%s: 0 \n",__func__);
-  printf("%s job_script:%s \n",__func__ , job_script);
   {
     int queue_index = job_queue_add_job( job_queue ,
                                          job_script ,
@@ -1322,7 +1320,6 @@ void enkf_main_isubmit_job( enkf_main_type * enkf_main , run_arg_type * run_arg 
                                          member_config_get_jobname( member_config ) ,
                                          1,
                                          (const char *[1]) { run_path } );
-    printf("Job added %d:%d \n",run_arg_get_iens( run_arg ), queue_index);
     run_arg_set_queue_index( run_arg , queue_index );
     run_arg_increase_submit_count( run_arg );
   }
@@ -1347,7 +1344,6 @@ void * enkf_main_icreate_run_path( enkf_main_type * enkf_main, run_arg_type * ru
     stringlist_free( param_list );
   }
 
-  printf("Createing simulations in:%s \n",run_arg_get_runpath( run_arg ));
   enkf_state_init_eclipse( enkf_state , run_arg );
   return NULL;
 }
@@ -1476,12 +1472,9 @@ static void enkf_main_start_queue(enkf_main_type * enkf_main,
 
   job_queue_manager_type * queue_manager = job_queue_manager_alloc( job_queue );
   job_queue_manager_start_queue( queue_manager , job_size , verbose_queue );
-  printf("%s: 0 \n",__func__);
   enkf_main_submit_jobs( enkf_main , run_context, job_queue);
-  printf("%s: 1 \n",__func__);
   job_queue_submit_complete( job_queue );
   res_log_add_message_str(LOG_INFO , "All jobs submitted to internal queue - waiting for completion.");
-  printf("%s: 2 \n",__func__);
 
   int max_runtime = analysis_config_get_max_runtime(enkf_main_get_analysis_config( enkf_main ));
   job_queue_set_max_job_duration(job_queue, max_runtime);
@@ -1501,11 +1494,9 @@ static int enkf_main_run_step(enkf_main_type * enkf_main,
                               ert_run_context_type * run_context,
                               job_queue_type * job_queue) {
 
-  printf("%s: 0 \n", __func__);
   if (ert_run_context_get_step1(run_context))
     ecl_config_assert_restart( enkf_main_get_ecl_config( enkf_main ) );
 
-  printf("%s: 1 \n", __func__);
   {
     int job_size , iens;
     bool     verbose_queue    = enkf_main->verbose;
@@ -1515,10 +1506,8 @@ static int enkf_main_run_step(enkf_main_type * enkf_main,
                                  ert_run_context_get_iactive( run_context ), STATE_LOAD_FAILURE | STATE_PARENT_FAILURE);
 
     job_size = bool_vector_count_equal( ert_run_context_get_iactive(run_context) , true );
-    printf("%s: 2 \n",__func__);
     enkf_main_start_queue(enkf_main, run_context, job_queue, job_size, verbose_queue);
-    printf("%s: 3 \n",__func__);
-    
+
     /* This should be carefully checked for the situation where only a
        subset (with offset > 0) of realisations are simulated. */
 
@@ -1651,9 +1640,7 @@ int enkf_main_run_simple_step(enkf_main_type * enkf_main,
                               job_queue_type * job_queue,
                               ert_run_context_type * run_context) {
 
-  printf("%s  ert_run_context(%p): %d \n",__func__ , run_context , ert_run_context_is_instance( run_context ));
   enkf_main_init_run( enkf_main , run_context );
-  printf("init_run complete \n");
   return enkf_main_run_step(enkf_main, run_context, job_queue);
 }
 
