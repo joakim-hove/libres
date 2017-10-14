@@ -1798,7 +1798,13 @@ void enkf_main_run_iterated_ES(enkf_main_type * enkf_main,
 
 
 ert_run_context_type * enkf_main_alloc_ert_run_context_ENSEMBLE_EXPERIMENT(const enkf_main_type * enkf_main , enkf_fs_type * fs , bool_vector_type * iactive , int iter) {
-  return ert_run_context_alloc_ENSEMBLE_EXPERIMENT( fs , iactive , model_config_get_runpath_fmt(enkf_main_get_model_config(enkf_main)) , enkf_main_get_data_kw(enkf_main) , iter );
+  const model_config_type * model_config = enkf_main_get_model_config(enkf_main);
+  return ert_run_context_alloc_ENSEMBLE_EXPERIMENT( fs,
+						    iactive,
+						    model_config_get_runpath_fmt(model_config),
+						    model_config_get_jobname_fmt(model_config),
+						    enkf_main_get_data_kw(enkf_main),
+						    iter );
 }
 
 
@@ -2290,7 +2296,12 @@ int enkf_main_load_from_forward_model_with_fs(enkf_main_type * enkf_main, int it
   int result[ens_size];
   model_config_type * model_config = enkf_main_get_model_config(enkf_main);
 
-  ert_run_context_type * run_context = ert_run_context_alloc_ENSEMBLE_EXPERIMENT( fs , iactive , model_config_get_runpath_fmt( model_config ) , enkf_main_get_data_kw(enkf_main) , iter );
+  ert_run_context_type * run_context = ert_run_context_alloc_ENSEMBLE_EXPERIMENT( fs,
+										  iactive,
+										  model_config_get_runpath_fmt( model_config ),
+										  model_config_get_jobname_fmt( model_config ),
+										  enkf_main_get_data_kw(enkf_main),
+										  iter );
   arg_pack_type ** arg_list = util_calloc( ens_size , sizeof * arg_list );
   thread_pool_type * tp     = thread_pool_alloc( 4 , true );  /* num_cpu - HARD coded. */
 
