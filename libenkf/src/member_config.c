@@ -42,7 +42,6 @@ struct member_config_struct {
   int                     iens;                /* The ensemble member number of this member. */
   char                  * casename;            /* The name of this case - will mostly be NULL. */
   char                  * jobname;             /* The jobname used for this job when submitting to the queue system. */
-  char                  * eclbase;             /* The ECLBASE string used for simulations of this member. */
 };
 
 
@@ -69,24 +68,6 @@ const char * member_config_update_jobname(member_config_type * member_config , c
 }
 
 
-
-const char * member_config_update_eclbase(member_config_type * member_config , const ecl_config_type * ecl_config , const subst_list_type * subst_list) {
-  util_safe_free( member_config->eclbase );
-  {
-    const path_fmt_type * eclbase_fmt = ecl_config_get_eclbase_fmt(ecl_config);
-    if (eclbase_fmt != NULL) {
-      {
-        char * tmp = path_fmt_alloc_path(eclbase_fmt , false , member_config->iens);
-        member_config->eclbase = subst_list_alloc_filtered_string( subst_list , tmp );
-        free( tmp );
-      }
-    }
-  }
-
-  return member_config->eclbase;
-}
-
-
 int member_config_get_iens( const member_config_type * member_config ) {
   return member_config->iens;
 }
@@ -94,29 +75,19 @@ int member_config_get_iens( const member_config_type * member_config ) {
 
 
 void member_config_free(member_config_type * member_config) {
-  util_safe_free(member_config->eclbase);
   util_safe_free(member_config->casename );
   util_safe_free(member_config->jobname );
   free(member_config);
 }
 
 
-const char * member_config_get_eclbase( const member_config_type * member_config ) {
-  return member_config->eclbase;
-}
-
-
 const char * member_config_get_jobname( const member_config_type * member_config ) {
-  if (member_config->jobname != NULL)
-    return member_config->jobname;
-  else {
-    if (member_config->eclbase != NULL)
-      return member_config->eclbase;
-    else {
-      util_abort("%s: sorry can not submit JOB - must specify name with JOBNAME or ECLBASE config keys\n",__func__);
-      return NULL;
-    }
+  if (!member_config->jobname) {
+    util_abort("%s: sorry can not submit JOB - must specify name with JOBNAME or ECLBASE config keys\n",__func__);
+    return NULL;
   }
+
+  return member_config->jobname;
 }
 
 
@@ -125,16 +96,12 @@ const char * member_config_get_casename( const member_config_type * member_confi
 }
 
 
-member_config_type * member_config_alloc(int iens ,
-                                         const char                 * casename ,
-                                         const ecl_config_type      * ecl_config ,
-                                         const ensemble_config_type * ensemble_config) {
+member_config_type * member_config_alloc(int iens, const char * casename) {
 
 
   member_config_type * member_config = util_malloc( sizeof * member_config );
   member_config->casename            = util_alloc_string_copy( casename );
   member_config->iens                = iens; /* Can only be changed in the allocater. */
-  member_config->eclbase             = NULL;
   member_config->jobname             = NULL;
   return member_config;
 }

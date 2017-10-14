@@ -41,6 +41,8 @@
 
 #include <ert/job_queue/forward_model.h>
 
+#include <ert/res_util/res_log.h>
+
 #include <ert/enkf/model_config.h>
 #include <ert/enkf/enkf_types.h>
 #include <ert/enkf/fs_types.h>
@@ -92,7 +94,7 @@ struct model_config_struct {
   path_fmt_type        * current_runpath;           /* path_fmt instance for runpath - runtime the call gets arguments: (iens, report_step1 , report_step2) - i.e. at least one %d must be present.*/
   char                 * current_path_key;
   hash_type            * runpath_map;
-  char                 * jobname_fmt;               /* Format string with one '%d' for the jobname - can be NULL in which case the eclbase name will be used. */
+  char                 * jobname_fmt;               
   char                 * enspath;
   char                 * rftpath;
   char                 * data_root;
@@ -557,8 +559,24 @@ void model_config_init(model_config_type * model_config ,
   if (config_content_has_item( config , DATA_ROOT_KEY))
     model_config_set_data_root( model_config , config_content_get_value(config , DATA_ROOT_KEY));
 
-  if (config_content_has_item( config , JOBNAME_KEY))
+  /*
+    The keywords ECLBASE and JOBNAME can be used as synonyms. But
+    observe that:
+     
+      1. The ecl_config object will also pick up the ECLBASE keyword,
+         and set the have_eclbase flag of that object.
+
+      2. If both ECLBASE and JOBNAME are in the config file the
+         JOBNAME keyword will be preferred.
+  */
+  if (config_content_has_item( config , ECLBASE_KEY))
+    model_config_set_jobname_fmt( model_config , config_content_get_value(config , ECLBASE_KEY));
+    
+  if (config_content_has_item( config , JOBNAME_KEY)) {
     model_config_set_jobname_fmt( model_config , config_content_get_value(config , JOBNAME_KEY));
+    if (config_content_has_item( config , ECLBASE_KEY))
+      res_log_add_message_str(LOG_WARNING, "Can not have both JOBNAME and ECLBASE keywords. The ECLBASE keyword will be ignored.");
+  }
 
   if (config_content_has_item( config , RFTPATH_KEY))
     model_config_set_rftpath( model_config , config_content_get_value(config , RFTPATH_KEY));

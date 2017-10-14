@@ -42,16 +42,14 @@ typedef  struct member_config_struct member_config_type;
   const char               * member_config_get_jobname( const member_config_type * member_config );
   int                        member_config_get_iens( const member_config_type * member_config );
   const char *               member_config_update_jobname(member_config_type * member_config , const char * jobname_fmt , const subst_list_type * subst_list);
-  const char *               member_config_update_eclbase(member_config_type * member_config , const ecl_config_type * ecl_config , const subst_list_type * subst_list);
   void                       member_config_free(member_config_type * member_config) ;
   const char *               member_config_get_eclbase( const member_config_type * member_config );
   const char *               member_config_get_casename( const member_config_type * member_config );
 
 
   member_config_type *       member_config_alloc(int iens ,
-                                                 const char * casename ,
-                                                 const ecl_config_type      * ecl_config        ,
-                                                 const ensemble_config_type * ensemble_config);
+                                                 const char * casename);
+                                                 
 
 
 #ifdef __cplusplus

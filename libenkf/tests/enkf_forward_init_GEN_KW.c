@@ -92,7 +92,7 @@ int main(int argc , char ** argv) {
       const ensemble_config_type * ens_config = enkf_main_get_ensemble_config( enkf_main );
       enkf_state_type * state   = enkf_main_iget_state( enkf_main , 0 );
       enkf_fs_type * fs = enkf_main_get_fs( enkf_main );
-      run_arg_type * run_arg = run_arg_alloc_ENSEMBLE_EXPERIMENT( "run_id", fs , 0 , 0 , "simulations/run0");
+      run_arg_type * run_arg = run_arg_alloc_ENSEMBLE_EXPERIMENT( "run_id", fs , 0 , 0 , "simulations/run0", "BASE");
       const enkf_config_node_type * gen_kw_config_node = ensemble_config_get_node( enkf_main_get_ensemble_config( enkf_main ), "MULTFLT");
       enkf_node_type * gen_kw_node = enkf_node_alloc( gen_kw_config_node );
       node_id_type node_id = {.report_step = 0 ,

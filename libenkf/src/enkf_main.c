@@ -1340,7 +1340,7 @@ void * enkf_main_icreate_run_path( enkf_main_type * enkf_main, run_arg_type * ru
                       run_arg_get_iens( run_arg ),
                       run_arg_get_iter( run_arg ),
                       run_arg_get_runpath( run_arg ),
-                      enkf_state_get_eclbase( enkf_state ));
+		      member_config_get_jobname( enkf_state_get_member_config( enkf_state )));
   }
 
   if (init_mode != INIT_NONE) {
