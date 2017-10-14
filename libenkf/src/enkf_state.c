@@ -632,13 +632,12 @@ static void enkf_state_internalize_custom_kw(enkf_state_type * enkf_state,
 
 
 
-static void enkf_state_internalize_GEN_DATA(enkf_state_type * enkf_state ,
+static void enkf_state_internalize_GEN_DATA(const ensemble_config_type * ens_config, 
                                             forward_load_context_type * load_context ,
                                             const model_config_type * model_config ,
                                             int last_report) {
 
-  stringlist_type * keylist_GEN_DATA = ensemble_config_alloc_keylist_from_impl_type(enkf_state->ensemble_config,
-                                                                                    GEN_DATA);
+  stringlist_type * keylist_GEN_DATA = ensemble_config_alloc_keylist_from_impl_type(ens_config, GEN_DATA);
 
 
   if (stringlist_get_size( keylist_GEN_DATA) > 0) 
@@ -647,9 +646,7 @@ static void enkf_state_internalize_GEN_DATA(enkf_state_type * enkf_state ,
 
   const run_arg_type * run_arg            = forward_load_context_get_run_arg( load_context );
   enkf_fs_type * sim_fs                   = run_arg_get_sim_fs( run_arg );
-  member_config_type * my_config          = enkf_state->my_config;
-  const int  iens                         = member_config_get_iens( my_config );
-  const ensemble_config_type * ens_config = enkf_state_get_ensemble_config( enkf_state );
+  const int  iens                         = run_arg_get_iens( run_arg );
 
   for (int ikey=0; ikey < stringlist_get_size( keylist_GEN_DATA ); ikey++) {
     const enkf_config_node_type * config_node = ensemble_config_get_node( ens_config , stringlist_iget( keylist_GEN_DATA , ikey));
@@ -699,14 +696,15 @@ static forward_load_context_type * enkf_state_alloc_load_context(const enkf_stat
                                                                  run_arg_type * run_arg,
                                                                  stringlist_type * messages) {
   bool load_summary = false;
-  const summary_key_matcher_type * matcher = ensemble_config_get_summary_key_matcher(state->ensemble_config);
+  const ensemble_config_type * ens_config = enkf_state->ensemble_config;
+  const summary_key_matcher_type * matcher = ensemble_config_get_summary_key_matcher(ens_config);
   if (summary_key_matcher_get_size(matcher) > 0)
     load_summary = true;
 
-  if (ensemble_config_has_GEN_DATA(state->ensemble_config))
+  if (ensemble_config_has_GEN_DATA(ens_config))
     load_summary = true;
 
-  if (ensemble_config_has_impl_type(state->ensemble_config, SUMMARY))
+  if (ensemble_config_has_impl_type(ens_config, SUMMARY))
     load_summary = true;
 
   forward_load_context_type * load_context;
@@ -732,7 +730,8 @@ static forward_load_context_type * enkf_state_alloc_load_context(const enkf_stat
    be called manually from external scope.
 */
 static int enkf_state_internalize_results(enkf_state_type * enkf_state , run_arg_type * run_arg , stringlist_type * msg_list) {
-  model_config_type * model_config = enkf_state->shared_info->model_config;
+  const ensemble_config_type * ens_config = enkf_state->ensemble_config;
+  const model_config_type * model_config = enkf_state->shared_info->model_config;
   forward_load_context_type * load_context = enkf_state_alloc_load_context( enkf_state , run_arg , msg_list);
   int report_step;
 
@@ -749,7 +748,7 @@ static int enkf_state_internalize_results(enkf_state_type * enkf_state , run_arg
   enkf_fs_type * sim_fs = run_arg_get_sim_fs( run_arg );
   int last_report = time_map_get_last_step( enkf_fs_get_time_map( sim_fs ));
   if (last_report < 0)
-    last_report = model_config_get_last_history_restart( enkf_state->shared_info->model_config);
+    last_report = model_config_get_last_history_restart( model_config );
 
   /* Ensure that the last step is internalized? */
   if (last_report > 0)
@@ -765,7 +764,7 @@ static int enkf_state_internalize_results(enkf_state_type * enkf_state , run_arg
                                            store_vectors);
   }
 
-  enkf_state_internalize_GEN_DATA(enkf_state , load_context , model_config , last_report);
+  enkf_state_internalize_GEN_DATA(ens_config , load_context , model_config , last_report);
   enkf_state_internalize_custom_kw(enkf_state, load_context , model_config);
 
   int result = forward_load_context_get_result(load_context);
@@ -774,6 +773,50 @@ static int enkf_state_internalize_results(enkf_state_type * enkf_state , run_arg
 }
 
 
+int enkf_state_forward_init(const ensemble_config_type * ens_config, 
+                            run_arg_type * run_arg) {
+
+  int result = 0;
+  if (run_arg_get_step1(run_arg) == 0) {
+    int iens = run_arg_get_iens( run_arg );
+    hash_iter_type * iter = ensemble_config_alloc_hash_iter( ens_config );
+    while ( !hash_iter_is_complete(iter) ) {
+      enkf_config_node_type * config_node = hash_iter_get_next_value(iter);
+      if (enkf_config_node_use_forward_init(config_node)) {
+	enkf_node_type * node = enkf_node_alloc( config_node );
+        enkf_fs_type * sim_fs = run_arg_get_sim_fs( run_arg );
+        node_id_type node_id = {.report_step = 0 ,
+                                .iens = iens };
+
+
+        /*
+           Will not reinitialize; i.e. it is essential that the
+           forward model uses the state given from the stored
+           instance, and not from the current run of e.g. RMS.
+        */
+
+        if (!enkf_node_has_data( node , sim_fs , node_id)) {
+          if (enkf_node_forward_init(node , run_arg_get_runpath( run_arg ) , iens ))
+            enkf_node_store( node , sim_fs , false , node_id );
+          else {
+            char * init_file = enkf_config_node_alloc_initfile( enkf_node_get_config( node ) , run_arg_get_runpath(run_arg) , iens );
+
+            if (init_file && !util_file_exists( init_file ))
+              fprintf(stderr,"File not found: %s - failed to initialize node: %s\n", init_file , enkf_node_get_key( node ));
+            else
+              fprintf(stderr,"Failed to initialize node: %s\n", enkf_node_get_key( node ));
+
+            util_safe_free( init_file );
+            result |= LOAD_FAILURE;
+          }
+        }
+	enkf_node_free( node );
+      }
+    }
+    hash_iter_free( iter );
+  }
+  return result;
+}
 
 
 
@@ -784,7 +827,7 @@ int enkf_state_load_from_forward_model(enkf_state_type * enkf_state ,
   int result = 0;
 
   if (ensemble_config_have_forward_init( enkf_state->ensemble_config ))
-    result |= enkf_state_forward_init( enkf_state , run_arg );
+    result |= enkf_state_forward_init( enkf_state->ensemble_config , run_arg );
 
   result |= enkf_state_internalize_results( enkf_state , run_arg , msg_list );
   state_map_type * state_map = enkf_fs_get_state_map( run_arg_get_sim_fs( run_arg ) );

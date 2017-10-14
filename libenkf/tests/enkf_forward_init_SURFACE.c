@@ -114,7 +114,7 @@ int main(int argc , char ** argv) {
         util_unlink_existing( "simulations/run0/Surface.irap" );
 
         test_assert_false( enkf_node_forward_init( surface_node , "simulations/run0" , 0 ));
-        error = enkf_state_forward_init( state , run_arg );
+        error = enkf_state_forward_init( ens_config , run_arg );
         test_assert_true(LOAD_FAILURE & error);
 
         {
@@ -135,7 +135,7 @@ int main(int argc , char ** argv) {
 
 
         test_assert_true( enkf_node_forward_init( surface_node , "simulations/run0" , 0 ));
-        error = enkf_state_forward_init( state , run_arg );
+        error = enkf_state_forward_init( ens_config , run_arg );
         test_assert_int_equal(0, error);
         error = enkf_state_load_from_forward_model( state , run_arg ,  msg_list );
         stringlist_free( msg_list );

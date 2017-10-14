@@ -114,7 +114,7 @@ int main(int argc , char ** argv) {
 
         test_assert_false(enkf_node_forward_init(field_node, "simulations/run0", 0));
         enkf_state_type * state = enkf_main_iget_state( enkf_main , 0 );
-        result = enkf_state_forward_init(state, run_arg);
+        result = enkf_state_forward_init(ens_config, run_arg);
         test_assert_true(LOAD_FAILURE & result);
 
         result = 0;
@@ -136,7 +136,7 @@ int main(int argc , char ** argv) {
         enkf_state_type * state = enkf_main_iget_state( enkf_main , 0 );
 
         test_assert_true( enkf_node_forward_init( field_node , "simulations/run0" , 0));
-        result = enkf_state_forward_init( state , run_arg);
+        result = enkf_state_forward_init( ens_config , run_arg);
         test_assert_int_equal( result, 0 );
         result = enkf_state_load_from_forward_model( state , run_arg ,  msg_list );
 

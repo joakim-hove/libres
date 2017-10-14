@@ -87,7 +87,7 @@ typedef struct ensemble_config_struct ensemble_config_type;
   void                             ensemble_config_fprintf_config( ensemble_config_type * ensemble_config , FILE * stream );
   const summary_key_matcher_type * ensemble_config_get_summary_key_matcher(const ensemble_config_type * ensemble_config);
   int                      ensemble_config_get_size(const ensemble_config_type * ensemble_config );
-
+  hash_iter_type                 * ensemble_config_alloc_hash_iter(const ensemble_config_type * config);
 
   UTIL_IS_INSTANCE_HEADER( ensemble_config );
   UTIL_SAFE_CAST_HEADER( ensemble_config );

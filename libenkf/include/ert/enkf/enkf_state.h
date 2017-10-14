@@ -69,8 +69,8 @@ typedef struct enkf_state_struct    enkf_state_type;
                                                         run_arg_type * run_arg ,
                                                         stringlist_type * msg_list);
 
-  int enkf_state_forward_init(enkf_state_type * enkf_state ,
-                              run_arg_type * run_arg);
+  int enkf_state_forward_init(const ensemble_config_type * ens_config,
+			      run_arg_type * run_arg);
 
   void enkf_state_init_eclipse(enkf_state_type *enkf_state, const run_arg_type * run_arg );
 

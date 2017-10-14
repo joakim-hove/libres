@@ -118,49 +118,6 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
 }
 
 
-int enkf_state_forward_init(enkf_state_type * enkf_state ,
-                            run_arg_type * run_arg) {
-
-  int result = 0;
-  if (run_arg_get_step1(run_arg) == 0) {
-    int iens = enkf_state_get_iens( enkf_state );
-    hash_iter_type * iter = hash_iter_alloc( enkf_state->node_hash );
-    while ( !hash_iter_is_complete(iter) ) {
-      enkf_node_type * node = hash_iter_get_next_value(iter);
-      if (enkf_node_use_forward_init(node)) {
-        enkf_fs_type * sim_fs = run_arg_get_sim_fs( run_arg );
-        node_id_type node_id = {.report_step = 0 ,
-                                .iens = iens };
-
-
-        /*
-           Will not reinitialize; i.e. it is essential that the
-           forward model uses the state given from the stored
-           instance, and not from the current run of e.g. RMS.
-        */
-
-        if (!enkf_node_has_data( node , sim_fs , node_id)) {
-          if (enkf_node_forward_init(node , run_arg_get_runpath( run_arg ) , iens ))
-            enkf_node_store( node , sim_fs , false , node_id );
-          else {
-            char * init_file = enkf_config_node_alloc_initfile( enkf_node_get_config( node ) , run_arg_get_runpath(run_arg) , iens );
-
-            if (init_file && !util_file_exists( init_file ))
-              fprintf(stderr,"File not found: %s - failed to initialize node: %s\n", init_file , enkf_node_get_key( node ));
-            else
-              fprintf(stderr,"Failed to initialize node: %s\n", enkf_node_get_key( node ));
-
-            util_safe_free( init_file );
-            result |= LOAD_FAILURE;
-          }
-        }
-
-      }
-    }
-    hash_iter_free( iter );
-  }
-  return result;
-}
 
 
 

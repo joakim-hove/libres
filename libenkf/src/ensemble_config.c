@@ -759,6 +759,11 @@ stringlist_type * ensemble_config_alloc_keylist(const ensemble_config_type * con
 }
 
 
+hash_iter_type * ensemble_config_alloc_hash_iter(const ensemble_config_type * config) {
+  return hash_iter_alloc( config->config_nodes );
+}
+
+
 /**
    observe that var_type here is an integer - naturally written as a
    sum of enkf_var_type values:

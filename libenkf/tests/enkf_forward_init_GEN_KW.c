@@ -89,6 +89,7 @@ int main(int argc , char ** argv) {
     test_assert_bool_equal( forward_init, ensemble_config_have_forward_init( enkf_main_get_ensemble_config( enkf_main )));
 
     if (forward_init) {
+      const ensemble_config_type * ens_config = enkf_main_get_ensemble_config( enkf_main );
       enkf_state_type * state   = enkf_main_iget_state( enkf_main , 0 );
       enkf_fs_type * fs = enkf_main_get_fs( enkf_main );
       run_arg_type * run_arg = run_arg_alloc_ENSEMBLE_EXPERIMENT( "run_id", fs , 0 , 0 , "simulations/run0");
@@ -110,7 +111,7 @@ int main(int argc , char ** argv) {
 
 
         test_assert_false( enkf_node_forward_init( gen_kw_node , "simulations/run0" , 0 ));
-        error = enkf_state_forward_init( state , run_arg  );
+        error = enkf_state_forward_init( ens_config , run_arg  );
         test_assert_true(LOAD_FAILURE & error);
 
         {
