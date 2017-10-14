@@ -34,7 +34,6 @@ struct forward_load_context_struct {
   ecl_sum_type        * ecl_sum;
   ecl_file_type       * restart_file;
   const run_arg_type  * run_arg;
-  char                * eclbase;
   const ecl_config_type * ecl_config;   // Can be NULL
 
   int step1;
@@ -57,13 +56,15 @@ static void forward_load_context_load_ecl_sum(forward_load_context_type * load_c
   if (ecl_config_active( load_context->ecl_config )) {
     const run_arg_type * run_arg           = forward_load_context_get_run_arg(load_context);
     const char * run_path                  = run_arg_get_runpath( run_arg );
-    const char * eclbase                   = load_context->eclbase;
+    const char * eclbase                   = run_arg_get_job_name( load_context->run_arg );
 
     const bool fmt_file                    = ecl_config_get_formatted(load_context->ecl_config);
     char * header_file                     = ecl_util_alloc_exfilename(run_path , eclbase , ECL_SUMMARY_HEADER_FILE , fmt_file , -1);
     char * unified_file                    = ecl_util_alloc_exfilename(run_path , eclbase , ECL_UNIFIED_SUMMARY_FILE , fmt_file ,  -1);
     stringlist_type * data_files           = stringlist_alloc_new();
 
+
+    printf("Looking for: %s \n",eclbase);
     /* Should we load from a unified summary file, or from several non-unified files? */
     if (unified_file != NULL)
       /* Use unified file: */
@@ -134,7 +135,7 @@ static void forward_load_context_load_ecl_sum(forward_load_context_type * load_c
 
 
 
-forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , bool load_summary , const ecl_config_type * ecl_config , const char * eclbase , stringlist_type * messages) {
+forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , bool load_summary , const ecl_config_type * ecl_config , stringlist_type * messages) {
   forward_load_context_type * load_context = util_malloc( sizeof * load_context );
   UTIL_TYPE_ID_INIT( load_context , FORWARD_LOAD_CONTEXT_TYPE_ID );
 
@@ -145,7 +146,6 @@ forward_load_context_type * forward_load_context_alloc( const run_arg_type * run
   load_context->load_result = 0;
   load_context->messages = messages;
   load_context->ecl_config = ecl_config;
-  load_context->eclbase = util_alloc_string_copy( eclbase );
 
   if (load_summary)
     forward_load_context_load_ecl_sum(load_context);
@@ -189,7 +189,6 @@ void forward_load_context_free( forward_load_context_type * load_context ) {
   if (load_context->ecl_sum)
     ecl_sum_free( load_context->ecl_sum );
 
-  util_safe_free( load_context->eclbase );
   free( load_context );
 }
 
@@ -203,7 +202,7 @@ bool forward_load_context_load_restart_file( forward_load_context_type * load_co
     {
       const bool fmt_file  = ecl_config_get_formatted( load_context->ecl_config );
       char * filename      = ecl_util_alloc_exfilename( run_arg_get_runpath(load_context->run_arg) ,
-                                                        load_context->eclbase,
+                                                        run_arg_get_job_name( load_context->run_arg ),
                                                         ECL_RESTART_FILE ,
                                                         fmt_file ,
                                                         load_context->load_step );

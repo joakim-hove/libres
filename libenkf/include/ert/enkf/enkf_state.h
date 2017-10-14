@@ -83,8 +83,6 @@ typedef struct enkf_state_struct    enkf_state_type;
                                       const ecl_config_type * ,
                                       ert_templates_type * templates,
                                       subst_list_type    * parent_subst);
-  void               enkf_state_update_jobname( enkf_state_type * enkf_state );
-  void               enkf_state_update_eclbase( enkf_state_type * enkf_state );
   void               enkf_state_add_node(enkf_state_type * , const char *  , const enkf_config_node_type * );
   void               enkf_state_load_ecl_restart(enkf_state_type * , bool , int );
   void               enkf_state_sample(enkf_state_type * , int);
@@ -97,7 +95,6 @@ typedef struct enkf_state_struct    enkf_state_type;
   int                enkf_state_get_iens(const enkf_state_type * );
   member_config_type *enkf_state_get_member_config(const enkf_state_type * enkf_state);
   const char       * enkf_state_get_run_path(const enkf_state_type * );
-  void               enkf_state_printf_subst_list(enkf_state_type * enkf_state , int step1 , int step2);
 
   rng_type         * enkf_state_get_rng( const enkf_state_type * enkf_state );
   unsigned int       enkf_state_get_random( enkf_state_type * enkf_state );

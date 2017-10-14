@@ -1,7 +1,3 @@
-static void enkf_main_init_jobname( enkf_main_type * enkf_main) {
-  for (int iens = 0; iens < enkf_main->ens_size; iens++)
-    enkf_state_update_jobname( enkf_main->ensemble[iens] );
-}
 
 
 

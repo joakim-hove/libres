@@ -39,9 +39,8 @@
 
 
 struct member_config_struct {
-  int                     iens;                /* The ensemble member number of this member. */
   char                  * casename;            /* The name of this case - will mostly be NULL. */
-  char                  * jobname;             /* The jobname used for this job when submitting to the queue system. */
+  int iens;
 };
 
 
@@ -55,40 +54,19 @@ struct member_config_struct {
 */
 
 
-const char * member_config_update_jobname(member_config_type * member_config , const char * jobname_fmt , const subst_list_type * subst_list) {
-  if (jobname_fmt != NULL) {
-    util_safe_free( member_config->jobname );
-    {
-      char * tmp = util_alloc_sprintf( jobname_fmt , member_config->iens);
-      member_config->jobname = subst_list_alloc_filtered_string( subst_list , tmp );
-      free( tmp );
-    }
-  }
-  return member_config->jobname;
-}
-
-
 int member_config_get_iens( const member_config_type * member_config ) {
   return member_config->iens;
 }
 
 
 
+
+
 void member_config_free(member_config_type * member_config) {
   util_safe_free(member_config->casename );
-  util_safe_free(member_config->jobname );
   free(member_config);
 }
 
-
-const char * member_config_get_jobname( const member_config_type * member_config ) {
-  if (!member_config->jobname) {
-    util_abort("%s: sorry can not submit JOB - must specify name with JOBNAME or ECLBASE config keys\n",__func__);
-    return NULL;
-  }
-
-  return member_config->jobname;
-}
 
 
 const char * member_config_get_casename( const member_config_type * member_config ) {
@@ -97,11 +75,8 @@ const char * member_config_get_casename( const member_config_type * member_confi
 
 
 member_config_type * member_config_alloc(int iens, const char * casename) {
-
-
   member_config_type * member_config = util_malloc( sizeof * member_config );
   member_config->casename            = util_alloc_string_copy( casename );
-  member_config->iens                = iens; /* Can only be changed in the allocater. */
-  member_config->jobname             = NULL;
+  member_config->iens = iens;
   return member_config;
 }

@@ -237,33 +237,6 @@ void enkf_state_add_subst_kw(enkf_state_type * enkf_state , const char * kw , co
 
 
 /**
-   This function must be called each time the eclbase_fmt has been
-   updated.
-*/
-
-void enkf_state_update_eclbase( enkf_state_type * enkf_state ) {
-  const char * eclbase  = member_config_update_jobname( enkf_state->my_config , model_config_get_jobname_fmt( enkf_state->shared_info->model_config ), enkf_state->subst_list);
-  const char * casename = member_config_get_casename( enkf_state->my_config ); /* Mostly NULL */
-  {
-    enkf_state_add_subst_kw(enkf_state , "ECL_BASE"    , eclbase , NULL);
-    enkf_state_add_subst_kw(enkf_state , "ECLBASE"     , eclbase , NULL);
-
-    if (casename)
-      enkf_state_add_subst_kw( enkf_state , "CASE" , casename , NULL);
-    else
-      enkf_state_add_subst_kw( enkf_state , "CASE" , eclbase , NULL);      /* No CASE_TABLE loaded - using the eclbase as default. */
-  }
-}
-
-
-void enkf_state_update_jobname( enkf_state_type * enkf_state ) {
-  member_config_update_jobname( enkf_state->my_config ,
-                                model_config_get_jobname_fmt( enkf_state->shared_info->model_config ) ,
-                                enkf_state->subst_list);
-}
-
-
-/**
    Sets all the static subst keywords which will not change during the simulation.
 */
 static void enkf_state_set_static_subst_kw(enkf_state_type * enkf_state) {
@@ -282,7 +255,6 @@ static void enkf_state_set_static_subst_kw(enkf_state_type * enkf_state) {
     free(iens_s);
     free(iens4_s);
   }
-  enkf_state_update_eclbase( enkf_state );
 }
 
 
@@ -389,7 +361,7 @@ enkf_state_type * enkf_state_alloc(int iens,
   else
     enkf_state_add_subst_kw(enkf_state , "CASE" , "---" , "The casename for this realization - similar to ECLBASE.");
 
-  enkf_state->my_config = member_config_alloc( iens , casename );
+  enkf_state->my_config = member_config_alloc( iens, casename );
   enkf_state_set_static_subst_kw( enkf_state );
   enkf_state_add_nodes( enkf_state , ensemble_config );
 
@@ -503,7 +475,6 @@ static bool enkf_state_internalize_dynamic_eclipse_results(enkf_state_type * enk
     }
 
     {
-      /* Looking for summary files on disk, and loading them. */
       enkf_fs_type * sim_fs = run_arg_get_sim_fs( run_arg );
       /** OK - now we have actually loaded the ecl_sum instance, or ecl_sum == NULL. */
       if (summary) {
@@ -701,12 +672,10 @@ static forward_load_context_type * enkf_state_alloc_load_context(const enkf_stat
 
   forward_load_context_type * load_context;
   const ecl_config_type * ecl_config = state->shared_info->ecl_config;
-  const char * eclbase = member_config_get_jobname( state->my_config );
 
   load_context = forward_load_context_alloc(run_arg,
                                             load_summary,
                                             ecl_config,
-                                            eclbase,
                                             messages);
   return load_context;
 
@@ -883,9 +852,14 @@ void enkf_state_free(enkf_state_type *enkf_state) {
    change with report step.
 */
 
-static void enkf_state_set_dynamic_subst_kw__(enkf_state_type * enkf_state , const char * run_path , int step1 , int step2) {
+static void enkf_state_set_dynamic_subst_kw(enkf_state_type * enkf_state , const run_arg_type * run_arg) {
+  const char * run_path = run_arg_get_runpath(run_arg);
+  const char * job_name = run_arg_get_job_name( run_arg );
+  int step1 = run_arg_get_step1(run_arg);
+  int step2 = run_arg_get_step2(run_arg);
+  
   const ecl_config_type * ecl_config = enkf_state->shared_info->ecl_config;
-  const bool fmt_file      = ecl_config_get_formatted( ecl_config );
+  const bool fmt_file  = ecl_config_get_formatted( ecl_config );
 
 
   if (run_path != NULL) {
@@ -894,6 +868,9 @@ static void enkf_state_set_dynamic_subst_kw__(enkf_state_type * enkf_state , con
     enkf_state_add_subst_kw(enkf_state , "RUNPATH"       , abs_runpath      , NULL);
     free( abs_runpath );
   }
+
+  enkf_state_add_subst_kw(enkf_state , "ECL_BASE"    , job_name , NULL);
+  enkf_state_add_subst_kw(enkf_state , "ECLBASE"     , job_name , NULL);
 
 
   /* Time step */
@@ -914,21 +891,24 @@ static void enkf_state_set_dynamic_subst_kw__(enkf_state_type * enkf_state , con
 
 
   /* Restart file names and RESTART keyword in datafile. */
-  const char * eclbase     = member_config_get_jobname( enkf_state->my_config );
-  if (eclbase != NULL) {
-    char * restart_file1     = ecl_util_alloc_filename(NULL , eclbase , ECL_RESTART_FILE , fmt_file , step1);
-    char * restart_file2     = ecl_util_alloc_filename(NULL , eclbase , ECL_RESTART_FILE , fmt_file , step2);
+  if (ecl_config_have_eclbase( ecl_config )) {
+    printf("run_mde:%d \n",run_arg_get_run_mode(run_arg));
+    if (run_arg_get_run_mode(run_arg) != INIT_ONLY) {
+      const bool fmt_file  = ecl_config_get_formatted( ecl_config );
+      char * restart_file1 = ecl_util_alloc_filename(NULL , job_name , ECL_RESTART_FILE , fmt_file , step1);
+      char * restart_file2 = ecl_util_alloc_filename(NULL , job_name , ECL_RESTART_FILE , fmt_file , step2);
 
-    enkf_state_add_subst_kw(enkf_state , "RESTART_FILE1" , restart_file1 , NULL);
-    enkf_state_add_subst_kw(enkf_state , "RESTART_FILE2" , restart_file2 , NULL);
+      enkf_state_add_subst_kw(enkf_state , "RESTART_FILE1" , restart_file1 , NULL);
+      enkf_state_add_subst_kw(enkf_state , "RESTART_FILE2" , restart_file2 , NULL);
 
-    free(restart_file1);
-    free(restart_file2);
+      free(restart_file1);
+      free(restart_file2);
 
-    if (step1 > 0) {
-      char * data_initialize = util_alloc_sprintf("RESTART\n   \'%s\'  %d  /\n" , eclbase , step1);
-      enkf_state_add_subst_kw(enkf_state , "INIT" , data_initialize , NULL);
-      free(data_initialize);
+      if (step1 > 0) {
+        char * data_initialize = util_alloc_sprintf("RESTART\n   \'%s\'  %d  /\n" , job_name , step1);
+        enkf_state_add_subst_kw(enkf_state , "INIT" , data_initialize , NULL);
+        free(data_initialize);
+      }
     }
   }
 
@@ -964,40 +944,9 @@ static void enkf_state_set_dynamic_subst_kw__(enkf_state_type * enkf_state , con
   free( randfloat_value );
 }
 
-static void enkf_state_set_dynamic_subst_kw(enkf_state_type * enkf_state,
-                                            const run_arg_type * run_arg ) {
-  enkf_state_set_dynamic_subst_kw__(enkf_state,
-                                    run_arg_get_runpath(run_arg),
-                                    run_arg_get_step1(run_arg),
-                                    run_arg_get_step2(run_arg));
-}
 
 
 
-void enkf_state_printf_subst_list(enkf_state_type * enkf_state,
-                                  int step1,
-                                  int step2) {
-  int ikw;
-  const char * fmt_string = "%-16s %-40s :: %s\n";
-  printf("\n\n");
-  printf(fmt_string , "Key" , "Current value" , "Description");
-  printf("------------------------------------------------------------------------------------------------------------------------\n");
-  if (step1 >= 0)
-    enkf_state_set_dynamic_subst_kw__(enkf_state , NULL , step1 , step2 );
-
-  for (ikw = 0; ikw < subst_list_get_size( enkf_state->subst_list ); ikw++) {
-    const char * key   = subst_list_iget_key( enkf_state->subst_list , ikw);
-    const char * value = subst_list_iget_value( enkf_state->subst_list , ikw);
-    const char * desc  = subst_list_iget_doc_string( enkf_state->subst_list , ikw );
-
-    if (value != NULL)
-      printf(fmt_string , key , value , desc);
-    else
-      printf(fmt_string , key , "[Not set]" , desc);
-  }
-  printf("------------------------------------------------------------------------------------------------------------------------\n");
-
-}
 
 
 
@@ -1015,7 +964,6 @@ void enkf_state_printf_subst_list(enkf_state_type * enkf_state,
    will become completely inconsistent. We just don't allow that!
 */
 void enkf_state_init_eclipse(enkf_state_type *enkf_state, const run_arg_type * run_arg ) {
-  const member_config_type  * my_config = enkf_state->my_config;
   const ecl_config_type * ecl_config = enkf_state->shared_info->ecl_config;
 
   util_make_path(run_arg_get_runpath( run_arg ));
@@ -1052,7 +1000,7 @@ void enkf_state_init_eclipse(enkf_state_type *enkf_state, const run_arg_type * r
     /* Writing the ECLIPSE data file. */
     if (ecl_config_get_data_file( ecl_config ) != NULL) {
       char * data_file = ecl_util_alloc_filename(run_arg_get_runpath( run_arg ),
-                                                 member_config_get_jobname( my_config ),
+                                                 run_arg_get_job_name( run_arg ),
                                                  ECL_DATA_FILE,
                                                  true,
                                                  -1);
@@ -1184,8 +1132,7 @@ bool enkf_state_complete_forward_modelEXIT__(void * arg ) {
 
 
 static void enkf_state_internal_retry(enkf_state_type * enkf_state , run_arg_type * run_arg) {
-  const member_config_type  * my_config   = enkf_state->my_config;
-  const int iens                          = member_config_get_iens( my_config );
+  const int iens                          = run_arg_get_iens( run_arg );
 
   res_log_add_fmt_message(LOG_ERROR, NULL,
                           "[%03d:%04d - %04d] Forward model failed.",

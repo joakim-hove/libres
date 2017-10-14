@@ -170,7 +170,6 @@ static void enkf_main_close_fs( enkf_main_type * enkf_main );
 static void enkf_main_init_fs( enkf_main_type * enkf_main );
 static void enkf_main_user_select_initial_fs(enkf_main_type * enkf_main );
 static void enkf_main_free_ensemble( enkf_main_type * enkf_main );
-static void enkf_main_init_jobname( enkf_main_type * enkf_main);
 static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
                                        enkf_fs_type * target_fs ,
                                        const bool_vector_type * ens_mask ,
@@ -1298,7 +1297,6 @@ static void enkf_main_monitor_job_queue ( const enkf_main_type * enkf_main, job_
 void enkf_main_isubmit_job( enkf_main_type * enkf_main , run_arg_type * run_arg , job_queue_type * job_queue) {
   const ecl_config_type * ecl_config = enkf_main_get_ecl_config( enkf_main );
   enkf_state_type * enkf_state = enkf_main->ensemble[ run_arg_get_iens(run_arg) ];
-  const member_config_type  * member_config = enkf_state_get_member_config( enkf_state );
   const queue_config_type * queue_config    = enkf_main_get_queue_config(enkf_main);
   const char * job_script                   = queue_config_get_job_script( queue_config );
 
@@ -1323,7 +1321,7 @@ void enkf_main_isubmit_job( enkf_main_type * enkf_main , run_arg_type * run_arg 
                                          callback_arg ,
                                          ecl_config_get_num_cpu( ecl_config ),
                                          run_path ,
-                                         member_config_get_jobname( member_config ) ,
+                                         run_arg_get_job_name( run_arg ),
                                          1,
                                          (const char *[1]) { run_path } );
     run_arg_set_queue_index( run_arg , queue_index );
@@ -1340,7 +1338,7 @@ void * enkf_main_icreate_run_path( enkf_main_type * enkf_main, run_arg_type * ru
                       run_arg_get_iens( run_arg ),
                       run_arg_get_iter( run_arg ),
                       run_arg_get_runpath( run_arg ),
-		      member_config_get_jobname( enkf_state_get_member_config( enkf_state )));
+		      run_arg_get_job_name( run_arg ));
   }
 
   if (init_mode != INIT_NONE) {
@@ -2045,7 +2043,6 @@ enkf_main_type * enkf_main_alloc(const res_config_type * res_config, bool strict
   enkf_main_user_select_initial_fs(enkf_main);
   enkf_main_init_obs(enkf_main);
   enkf_main_add_ensemble_members(enkf_main);
-  enkf_main_init_jobname(enkf_main);
 
   return enkf_main;
 }

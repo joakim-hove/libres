@@ -64,7 +64,6 @@ config_data = {
                                "WWPT:PROD", "WBHP:PROD", "WWIR:INJ", "WWIT:INJ",
                                "WBHP:INJ", "ROE:1"],
         "GEN_KW"            : ["SIGMA"],
-        "ECLBASE"           : "eclipse/model/<ECLIPSE_NAME>-%d",
         "ENSPATH"           : "../output/storage/<CASE_DIR>",
         "PLOT_PATH"         : "../output/results/plot/<CASE_DIR>",
         "UPDATE_LOG_PATH"   : "../output/update_log/<CASE_DIR>",
@@ -315,10 +314,6 @@ class ResConfigTest(ExtendedTestCase):
                 ecl_config.getStartDate()
                 )
 
-        self.assertEqual(
-                config_data["ECLBASE"],
-                ecl_config.getEclBase()
-                )
 
         for extension in ["SMSPEC", "UNSMRY"]:
             self.assert_same_config_file(
