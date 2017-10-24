@@ -50,6 +50,7 @@ extern "C" {
   enkf_fs_type              * forward_load_context_get_sim_fs( const forward_load_context_type * load_context );
   bool                        forward_load_context_load_restart_file( forward_load_context_type * load_context , int report_step );
   void                        forward_load_context_select_step( forward_load_context_type * load_context , int report_step);
+  bool                        forward_load_context_ecl_active( const forward_load_context_type * load_context );
 
   UTIL_IS_INSTANCE_HEADER( forward_load_context );
 

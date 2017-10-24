@@ -52,19 +52,11 @@ void enkf_state_add_node(enkf_state_type * enkf_state , const char * node_key , 
    When the state has been loaded it goes straight to disk.
 */
 
-static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
+static void enkf_state_internalize_eclipse_state(const ensemble_config_type * ens_config,
 						 forward_load_context_type * load_context,
-						 const model_config_type * model_config ,
-                                                 int report_step ,
+                                                 const run_arg_type * run_arg,
+                                                 int report_step,
                                                  bool store_vectors) {
-
-  shared_info_type   * shared_info   = enkf_state->shared_info;
-  const ecl_config_type * ecl_config = shared_info->ecl_config;
-  if (!ecl_config_active( ecl_config ))
-    return;
-
-  if (!model_config_internalize_state( model_config , report_step ))
-    return;
 
   forward_load_context_load_restart_file( load_context , report_step);
 
@@ -81,21 +73,18 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
     const run_arg_type * run_arg = forward_load_context_get_run_arg( load_context );
     enkf_fs_type * sim_fs = run_arg_get_sim_fs( run_arg );
 
-    member_config_type * my_config     = enkf_state->my_config;
-    const int  iens                    = member_config_get_iens( my_config );
-    const bool internalize_state       = model_config_internalize_state( model_config , report_step );
-
-    hash_iter_type * iter = hash_iter_alloc(enkf_state->node_hash);
+    const int  iens                    = run_arg_get_iens( run_arg );
+    hash_iter_type * iter = ensemble_config_alloc_hash_iter( ens_config );
     while ( !hash_iter_is_complete(iter) ) {
-      enkf_node_type * enkf_node = hash_iter_get_next_value(iter);
-      if (enkf_node_get_impl_type(enkf_node) != FIELD)
+      enkf_config_node_type * config_node = hash_iter_get_next_value(iter);
+      if (enkf_config_node_get_impl_type(config_node) != FIELD)
         continue;
 
-      if (!enkf_node_has_func(enkf_node , forward_load_func))
+      if (!enkf_config_node_use_forward_init(config_node))
         continue;
 
-      if (internalize_state || enkf_node_internalize(enkf_node , report_step)) {
-
+      if (true) {
+        enkf_node_type * enkf_node = enkf_node_alloc( config_node );
         if (enkf_node_forward_load(enkf_node , load_context)) {
           node_id_type node_id = {.report_step = report_step ,
                                   .iens = iens };
@@ -110,7 +99,7 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
             free( msg );
           }
         }
-
+        enkf_node_free( enkf_node );
       }
     }
     hash_iter_free(iter);

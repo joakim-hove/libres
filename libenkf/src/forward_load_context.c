@@ -31,9 +31,9 @@ struct forward_load_context_struct {
   UTIL_TYPE_ID_DECLARATION;
   // Everyuthing can be NULL here ... - when created from gen_data.
 
-  ecl_sum_type        * ecl_sum;
-  ecl_file_type       * restart_file;
-  const run_arg_type  * run_arg;
+  ecl_sum_type          * ecl_sum;
+  ecl_file_type         * restart_file;
+  const run_arg_type    * run_arg;
   const ecl_config_type * ecl_config;   // Can be NULL
 
   int step1;
@@ -44,6 +44,7 @@ struct forward_load_context_struct {
   /* The variables below are updated during the load process. */
   int load_step;
   int load_result;
+  bool ecl_active;
 };
 
 UTIL_IS_INSTANCE_FUNCTION( forward_load_context , FORWARD_LOAD_CONTEXT_TYPE_ID)
@@ -53,7 +54,7 @@ UTIL_IS_INSTANCE_FUNCTION( forward_load_context , FORWARD_LOAD_CONTEXT_TYPE_ID)
 static void forward_load_context_load_ecl_sum(forward_load_context_type * load_context) {
   ecl_sum_type * summary                 = NULL;
 
-  if (ecl_config_active( load_context->ecl_config )) {
+  if (load_context->ecl_active ) {
     const run_arg_type * run_arg           = forward_load_context_get_run_arg(load_context);
     const char * run_path                  = run_arg_get_runpath( run_arg );
     const char * eclbase                   = run_arg_get_job_name( load_context->run_arg );
@@ -139,6 +140,7 @@ forward_load_context_type * forward_load_context_alloc( const run_arg_type * run
   forward_load_context_type * load_context = util_malloc( sizeof * load_context );
   UTIL_TYPE_ID_INIT( load_context , FORWARD_LOAD_CONTEXT_TYPE_ID );
 
+  load_context->ecl_active = false;
   load_context->ecl_sum = NULL;
   load_context->restart_file = NULL;
   load_context->run_arg = run_arg;
@@ -146,6 +148,8 @@ forward_load_context_type * forward_load_context_alloc( const run_arg_type * run
   load_context->load_result = 0;
   load_context->messages = messages;
   load_context->ecl_config = ecl_config;
+  if (ecl_config)
+    load_context->ecl_active = ecl_config_active( ecl_config );
 
   if (load_summary)
     forward_load_context_load_ecl_sum(load_context);
@@ -263,6 +267,10 @@ int forward_load_context_get_load_step(const forward_load_context_type * load_co
   return load_context->load_step;
 }
 
+
+bool forward_load_context_ecl_active( const forward_load_context_type * load_context ) {
+  return load_context->ecl_active;
+}
 
 
 
