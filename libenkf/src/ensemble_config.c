@@ -1061,3 +1061,49 @@ void ensemble_config_fprintf_config( ensemble_config_type * ensemble_config , FI
 int ensemble_config_get_size(const ensemble_config_type * ensemble_config ) {
   return hash_get_size( ensemble_config->config_nodes );
 }
+
+
+int ensemble_config_forward_init(const ensemble_config_type * ens_config,
+                                 run_arg_type * run_arg) {
+
+  int result = 0;
+  if (run_arg_get_step1(run_arg) == 0) {
+    int iens = run_arg_get_iens( run_arg );
+    hash_iter_type * iter = ensemble_config_alloc_hash_iter( ens_config );
+    while ( !hash_iter_is_complete(iter) ) {
+      enkf_config_node_type * config_node = hash_iter_get_next_value(iter);
+      if (enkf_config_node_use_forward_init(config_node)) {
+	enkf_node_type * node = enkf_node_alloc( config_node );
+        enkf_fs_type * sim_fs = run_arg_get_sim_fs( run_arg );
+        node_id_type node_id = {.report_step = 0 ,
+                                .iens = iens };
+
+
+        /*
+           Will not reinitialize; i.e. it is essential that the
+           forward model uses the state given from the stored
+           instance, and not from the current run of e.g. RMS.
+        */
+
+        if (!enkf_node_has_data( node , sim_fs , node_id)) {
+          if (enkf_node_forward_init(node , run_arg_get_runpath( run_arg ) , iens ))
+            enkf_node_store( node , sim_fs , false , node_id );
+          else {
+            char * init_file = enkf_config_node_alloc_initfile( enkf_node_get_config( node ) , run_arg_get_runpath(run_arg) , iens );
+
+            if (init_file && !util_file_exists( init_file ))
+              fprintf(stderr,"File not found: %s - failed to initialize node: %s\n", init_file , enkf_node_get_key( node ));
+            else
+              fprintf(stderr,"Failed to initialize node: %s\n", enkf_node_get_key( node ));
+
+            util_safe_free( init_file );
+            result |= LOAD_FAILURE;
+          }
+        }
+	enkf_node_free( node );
+      }
+    }
+    hash_iter_free( iter );
+  }
+  return result;
+}

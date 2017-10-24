@@ -119,7 +119,7 @@ int main(int argc , char ** argv) {
 
         test_assert_true( enkf_node_forward_init( gen_param_node , "simulations/run0" , 0 ));
 
-        error = enkf_state_forward_init( ens_config , run_arg );
+        error = ensemble_config_forward_init( ens_config , run_arg );
         test_assert_int_equal(0, error);
         {
           enkf_fs_type * fs = enkf_main_get_fs( enkf_main );
