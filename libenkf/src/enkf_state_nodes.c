@@ -112,39 +112,3 @@ static void enkf_state_internalize_eclipse_state(const ensemble_config_type * en
 
 
 
-/*static void enkf_state_fread(enkf_state_type * enkf_state , enkf_fs_type * fs , int mask , int report_step , int iens) {
-  const ensemble_config_type * ens_config = enkf_state->ensemble_config;
-
-  stringlist_type * key_list = ensemble_config_alloc_keylist( ens_config );
-  for (int ikey = 0; ikey < stringlist_get_size( key_list ); ikey++) {
-    enkf_node_type * enkf_node = hash_get(enkf_state->node_hash , stringlist_iget( key_list , ikey ));
-
-    if (enkf_node_include_type(enkf_node , mask)) {
-      node_id_type node_id = {.report_step = report_step ,
-                              .iens = iens };
-      bool forward_init = enkf_node_use_forward_init( enkf_node );
-      if (forward_init)
-        enkf_node_try_load(enkf_node , fs , node_id );
-      else
-        enkf_node_load(enkf_node , fs , node_id);
-    }
-  }
-  stringlist_free( key_list );
-
-}
-*/
-
-
-
-static enkf_node_type * enkf_state_get_node(const enkf_state_type * enkf_state , const char * node_key) {
-  if (hash_has_key(enkf_state->node_hash , node_key)) {
-    enkf_node_type * enkf_node = hash_get(enkf_state->node_hash , node_key);
-    return enkf_node;
-  } else {
-    util_abort("%s: node:[%s] not found in state object - aborting.\n",__func__ , node_key);
-    return NULL; /* Compiler shut up */
-  }
-}
-
-
-

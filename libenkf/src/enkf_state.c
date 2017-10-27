@@ -67,7 +67,6 @@
 #include <ert/enkf/site_config.h>
 #include <ert/enkf/ecl_config.h>
 #include <ert/enkf/ert_template.h>
-#include <ert/enkf/member_config.h>
 #include <ert/enkf/enkf_defaults.h>
 #include <ert/enkf/state_map.h>
 #include <ert/res_util/res_log.h>
@@ -118,9 +117,8 @@ struct enkf_state_struct {
                                                       operation on the ECLIPSE data file. Will at least contain the key INIT"
                                                       - which will describe initialization of ECLIPSE (EQUIL or RESTART).*/
   ensemble_config_type  * ensemble_config;         /* The config nodes for the enkf_node objects contained in node_hash. */
-
   shared_info_type      * shared_info;             /* Pointers to shared objects which is needed by the enkf_state object (read only). */
-  member_config_type    * my_config;               /* Private config information for this member; not updated during a simulation. */
+  int                     __iens;
 };
 
 /*****************************************************************/
@@ -131,8 +129,6 @@ static void enkf_state_internalize_eclipse_state(const ensemble_config_type * en
                                                  const run_arg_type * run_arg,
                                                  int report_step,
                                                  bool store_vectors);
-
-static enkf_node_type * enkf_state_get_node(const enkf_state_type * enkf_state , const char * node_key);
 
 /*****************************************************************/
 
@@ -204,20 +200,9 @@ void enkf_state_initialize(enkf_state_type * enkf_state , rng_type * rng, enkf_f
 
 
 
-/*
-  void enkf_state_set_iens(enkf_state_type * enkf_state , int iens) {
-  enkf_state->my_iens = iens;
-  }
-*/
-
 int enkf_state_get_iens(const enkf_state_type * enkf_state) {
-  return member_config_get_iens( enkf_state->my_config );
+  return enkf_state->__iens;
 }
-
-member_config_type * enkf_state_get_member_config(const enkf_state_type * enkf_state) {
-  return enkf_state->my_config;
-}
-
 
 
 subst_list_type * enkf_state_get_subst_list( enkf_state_type * enkf_state ) {
@@ -240,7 +225,7 @@ void enkf_state_add_subst_kw(enkf_state_type * enkf_state , const char * kw , co
 static void enkf_state_set_static_subst_kw(enkf_state_type * enkf_state) {
 
   {
-    int    iens        = member_config_get_iens( enkf_state->my_config );
+    int    iens        = enkf_state->__iens;
     char * iens_s      = util_alloc_sprintf("%d"   , iens);
     char * iens4_s     = util_alloc_sprintf("%04d" , iens);
     char * iensp1_s    = util_alloc_sprintf("%d"   , iens + 1);
@@ -358,7 +343,7 @@ enkf_state_type * enkf_state_alloc(int iens,
   else
     enkf_state_add_subst_kw(enkf_state , "CASE" , "---" , "The casename for this realization - similar to ECLBASE.");
 
-  enkf_state->my_config = member_config_alloc( iens, casename );
+  enkf_state->__iens = iens;
   enkf_state_set_static_subst_kw( enkf_state );
   enkf_state_add_nodes( enkf_state , ensemble_config );
 
@@ -813,7 +798,6 @@ void * enkf_state_load_from_forward_model_mt( void * arg ) {
 void enkf_state_free(enkf_state_type *enkf_state) {
   hash_free(enkf_state->node_hash);
   subst_list_free(enkf_state->subst_list);
-  member_config_free(enkf_state->my_config);
   shared_info_free(enkf_state->shared_info);
   free(enkf_state);
 }

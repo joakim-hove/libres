@@ -64,7 +64,6 @@ add_library(enkf src/active_list.c
                  src/local_obsdata_node.c
                  src/local_updatestep.c
                  src/meas_data.c
-                 src/member_config.c
                  src/misfit_ensemble.c
                  src/misfit_member.c
                  src/misfit_ranking.c
