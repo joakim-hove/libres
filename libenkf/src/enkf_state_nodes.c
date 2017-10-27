@@ -112,17 +112,16 @@ static void enkf_state_internalize_eclipse_state(const ensemble_config_type * en
 
 
 
-static void enkf_state_fread(enkf_state_type * enkf_state , enkf_fs_type * fs , int mask , int report_step ) {
-  const member_config_type * my_config = enkf_state->my_config;
-  const int num_keys = hash_get_size(enkf_state->node_hash);
-  char ** key_list   = hash_alloc_keylist(enkf_state->node_hash);
-  int ikey;
+/*static void enkf_state_fread(enkf_state_type * enkf_state , enkf_fs_type * fs , int mask , int report_step , int iens) {
+  const ensemble_config_type * ens_config = enkf_state->ensemble_config;
 
-  for (ikey = 0; ikey < num_keys; ikey++) {
-    enkf_node_type * enkf_node = hash_get(enkf_state->node_hash , key_list[ikey]);
+  stringlist_type * key_list = ensemble_config_alloc_keylist( ens_config );
+  for (int ikey = 0; ikey < stringlist_get_size( key_list ); ikey++) {
+    enkf_node_type * enkf_node = hash_get(enkf_state->node_hash , stringlist_iget( key_list , ikey ));
+
     if (enkf_node_include_type(enkf_node , mask)) {
       node_id_type node_id = {.report_step = report_step ,
-                              .iens = member_config_get_iens( my_config )};
+                              .iens = iens };
       bool forward_init = enkf_node_use_forward_init( enkf_node );
       if (forward_init)
         enkf_node_try_load(enkf_node , fs , node_id );
@@ -130,9 +129,10 @@ static void enkf_state_fread(enkf_state_type * enkf_state , enkf_fs_type * fs , 
         enkf_node_load(enkf_node , fs , node_id);
     }
   }
-  util_free_stringlist(key_list , num_keys);
-}
+  stringlist_free( key_list );
 
+}
+*/
 
 
 

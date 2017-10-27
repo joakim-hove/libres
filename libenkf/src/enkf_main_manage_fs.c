@@ -116,7 +116,8 @@ static void * enkf_main_initialize_from_scratch_mt(void * void_arg) {
   int iens                           = arg_pack_iget_int( arg_pack , 3 );
   init_mode_type init_mode           = arg_pack_iget_int( arg_pack , 4 );
   enkf_state_type * state = enkf_main_iget_state( enkf_main , iens);
-  enkf_state_initialize( state , init_fs , param_list , init_mode);
+  rng_type * rng                     = rng_manager_iget( enkf_main->rng_manager, iens );
+  enkf_state_initialize( state , rng, init_fs , param_list , init_mode);
   return NULL;
 }
 

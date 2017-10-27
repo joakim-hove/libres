@@ -28,6 +28,7 @@ extern "C" {
 #include <ert/util/rng.h>
 #include <ert/util/stringlist.h>
 #include <ert/util/matrix.h>
+#include <ert/util/rng.h>
 #include <ert/res_util/subst_list.h>
 
 #include <ert/sched/sched_file.h>
@@ -56,7 +57,7 @@ typedef struct enkf_state_struct    enkf_state_type;
 
   //void             * enkf_state_complete_forward_model__(void * arg );
   void *             enkf_state_load_from_forward_model_mt( void * arg );
-  void               enkf_state_initialize(enkf_state_type * enkf_state , enkf_fs_type * fs, const stringlist_type * param_list , init_mode_type init_mode);
+  void               enkf_state_initialize(enkf_state_type * enkf_state , rng_type * rng, enkf_fs_type * fs, const stringlist_type * param_list , init_mode_type init_mode);
   void               enkf_state_swapout_node(const enkf_state_type * , const char *);
   void               enkf_state_swapin_node(const enkf_state_type *  , const char *);
   void               enkf_state_iset_eclpath(enkf_state_type * , int , const char *);
@@ -72,7 +73,7 @@ typedef struct enkf_state_struct    enkf_state_type;
   int enkf_state_forward_init(const ensemble_config_type * ens_config,
 			      run_arg_type * run_arg);
 
-  void enkf_state_init_eclipse(enkf_state_type *enkf_state, const run_arg_type * run_arg );
+  void enkf_state_init_eclipse(enkf_state_type *enkf_state, const ecl_config_type * ecl_config,  const run_arg_type * run_arg );
 
   enkf_state_type  * enkf_state_alloc(int ,
                                       rng_type        * main_rng ,
@@ -87,7 +88,7 @@ typedef struct enkf_state_struct    enkf_state_type;
   void               enkf_state_load_ecl_restart(enkf_state_type * , bool , int );
   void               enkf_state_sample(enkf_state_type * , int);
   void               enkf_state_ens_read(       enkf_state_type * , const char * , int);
-  void               enkf_state_ecl_write(enkf_state_type *, const run_arg_type * run_arg , enkf_fs_type * fs);
+  void               enkf_state_ecl_write(const ensemble_config_type * ens_config, const model_config_type * model_config, const run_arg_type * run_arg , enkf_fs_type * fs);
   void               enkf_state_free(enkf_state_type * );
   void               enkf_state_apply(enkf_state_type * , enkf_node_ftype1 * , int );
   void               enkf_state_serialize(enkf_state_type * , size_t);
@@ -96,8 +97,6 @@ typedef struct enkf_state_struct    enkf_state_type;
   member_config_type *enkf_state_get_member_config(const enkf_state_type * enkf_state);
   const char       * enkf_state_get_run_path(const enkf_state_type * );
 
-  rng_type         * enkf_state_get_rng( const enkf_state_type * enkf_state );
-  unsigned int       enkf_state_get_random( enkf_state_type * enkf_state );
   run_status_type    enkf_state_get_simple_run_status(const enkf_state_type * state);
   void               enkf_state_add_subst_kw(enkf_state_type * enkf_state , const char * kw , const char * value , const char * doc_string);
   subst_list_type    * enkf_state_get_subst_kw( enkf_state_type * enkf_state );

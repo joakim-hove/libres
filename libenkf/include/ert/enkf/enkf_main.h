@@ -61,6 +61,7 @@ extern "C" {
 #include <ert/enkf/ranking_table.h>
 #include <ert/enkf/hook_manager.h>
 #include <ert/enkf/rng_config.h>
+#include <ert/enkf/rng_manager.h>
 #include <ert/enkf/pca_plot_data.h>
 #include <ert/enkf/field_config.h>
 #include <ert/enkf/ert_run_context.h>
@@ -298,6 +299,8 @@ extern "C" {
   ert_run_context_type * enkf_main_alloc_ert_run_context_ENSEMBLE_EXPERIMENT(const enkf_main_type * enkf_main , enkf_fs_type * fs , bool_vector_type * iactive , int iter);
 
   queue_config_type * enkf_main_get_queue_config(enkf_main_type * enkf_main );
+
+  rng_manager_type  * enkf_main_get_rng_manager(const enkf_main_type * enkf_main );
 
 UTIL_SAFE_CAST_HEADER(enkf_main);
 UTIL_IS_INSTANCE_HEADER(enkf_main);

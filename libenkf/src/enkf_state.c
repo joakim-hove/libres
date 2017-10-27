@@ -75,6 +75,7 @@
 #include <ert/enkf/summary_key_matcher.h>
 #include <ert/enkf/forward_load_context.h>
 #include <ert/enkf/enkf_config_node.h>
+#include <ert/enkf/callback_arg.h>
 
 #define  ENKF_STATE_TYPE_ID 78132
 
@@ -120,7 +121,6 @@ struct enkf_state_struct {
 
   shared_info_type      * shared_info;             /* Pointers to shared objects which is needed by the enkf_state object (read only). */
   member_config_type    * my_config;               /* Private config information for this member; not updated during a simulation. */
-  rng_type              * rng;                     /* This is owned and managed by the external rng_manager. */
 };
 
 /*****************************************************************/
@@ -131,8 +131,6 @@ static void enkf_state_internalize_eclipse_state(const ensemble_config_type * en
                                                  const run_arg_type * run_arg,
                                                  int report_step,
                                                  bool store_vectors);
-
-static void enkf_state_fread(enkf_state_type * enkf_state , enkf_fs_type * fs , int mask , int report_step );
 
 static enkf_node_type * enkf_state_get_node(const enkf_state_type * enkf_state , const char * node_key);
 
@@ -172,7 +170,7 @@ static void shared_info_free(shared_info_type * shared_info) {
 /*
   This function does not acces the nodes of the enkf_state object.
 */
-void enkf_state_initialize(enkf_state_type * enkf_state , enkf_fs_type * fs , const stringlist_type * param_list, init_mode_type init_mode) {
+void enkf_state_initialize(enkf_state_type * enkf_state , rng_type * rng, enkf_fs_type * fs , const stringlist_type * param_list, init_mode_type init_mode) {
   if (init_mode != INIT_NONE) {
     int iens = enkf_state_get_iens( enkf_state );
     state_map_type * state_map = enkf_fs_get_state_map( fs );
@@ -188,7 +186,7 @@ void enkf_state_initialize(enkf_state_type * enkf_state , enkf_fs_type * fs , co
         bool has_data = enkf_node_has_data(param_node, fs, node_id);
 
         if ((init_mode == INIT_FORCE) || (has_data == false) || (current_state == STATE_LOAD_FAILURE)) {
-          if (enkf_node_initialize(param_node, iens, enkf_state->rng))
+          if (enkf_node_initialize(param_node, iens, rng))
             enkf_node_store(param_node, fs, true, node_id);
         }
 
@@ -307,7 +305,6 @@ enkf_state_type * enkf_state_alloc(int iens,
 
   enkf_state->node_hash         = hash_alloc();
   enkf_state->subst_list        = subst_list_alloc( subst_parent );
-  enkf_state->rng               = rng;
   /*
     The user MUST specify an INIT_FILE, and for the first timestep the
     <INIT> tag in the data file will be replaced by an
@@ -901,21 +898,6 @@ static void enkf_state_set_dynamic_subst_kw(enkf_state_type * enkf_state , const
          and the EQUIL (or whatever) info to initialize the model is inlined in the datafile.
       */
   }
-
-
-  /**
-     Adding keys for <RANDINT> and <RANDFLOAT> - these are only
-     added for backwards compatibility, should be replaced with
-     prober function callbacks.
-  */
-  char * randint_value    = util_alloc_sprintf( "%u"      , rng_forward( enkf_state->rng ));
-  char * randfloat_value  = util_alloc_sprintf( "%12.10f" , rng_get_double( enkf_state->rng ));
-
-  enkf_state_add_subst_kw( enkf_state , "RANDINT"   , randint_value   , NULL);
-  enkf_state_add_subst_kw( enkf_state , "RANDFLOAT" , randfloat_value , NULL);
-
-  free( randint_value );
-  free( randfloat_value );
 }
 
 
@@ -937,8 +919,11 @@ static void enkf_state_set_dynamic_subst_kw(enkf_state_type * enkf_state , const
    it is required that report_step1 == 0; otherwise the dynamic data
    will become completely inconsistent. We just don't allow that!
 */
-void enkf_state_init_eclipse(enkf_state_type *enkf_state, const run_arg_type * run_arg ) {
-  const ecl_config_type * ecl_config = enkf_state->shared_info->ecl_config;
+
+void enkf_state_init_eclipse(enkf_state_type * enkf_state, const ecl_config_type * ecl_config, const run_arg_type * run_arg ) {
+  const ensemble_config_type * ens_config = enkf_state->ensemble_config;
+  const shared_info_type * shared_info = enkf_state->shared_info;
+  const model_config_type * model_config = shared_info->model_config;
 
   util_make_path(run_arg_get_runpath( run_arg ));
   if (ecl_config_get_schedule_target( ecl_config ) != NULL) {
@@ -960,14 +945,9 @@ void enkf_state_init_eclipse(enkf_state_type *enkf_state, const run_arg_type * r
      For reruns of various kinds the parameters and the state are
      generally loaded from different timesteps:
   */
-  enkf_fs_type * sim_fs = run_arg_get_sim_fs( run_arg );
-  /* Loading parameter information: loaded from timestep: run_arg->init_step_parameters. */
-  enkf_state_fread(enkf_state , sim_fs , PARAMETER , 0);
-
-
   enkf_state_set_dynamic_subst_kw(  enkf_state , run_arg );
-  ert_templates_instansiate( enkf_state->shared_info->templates , run_arg_get_runpath( run_arg ) , enkf_state->subst_list );
-  enkf_state_ecl_write( enkf_state , run_arg , sim_fs);
+  ert_templates_instansiate( shared_info->templates , run_arg_get_runpath( run_arg ) , enkf_state->subst_list );
+  enkf_state_ecl_write(ens_config, model_config , run_arg , run_arg_get_sim_fs( run_arg ));
 
   if (ecl_config_have_eclbase( ecl_config )) {
 
@@ -985,13 +965,13 @@ void enkf_state_init_eclipse(enkf_state_type *enkf_state, const run_arg_type * r
     }
   }
 
-  mode_t umask = site_config_get_umask(enkf_state->shared_info->site_config);
+  mode_t umask = site_config_get_umask(shared_info->site_config);
 
   /* This is where the job script is created */
-  forward_model_formatted_fprintf( model_config_get_forward_model( enkf_state->shared_info->model_config ) ,
+  forward_model_formatted_fprintf( model_config_get_forward_model( model_config ) ,
                                    run_arg_get_run_id( run_arg ),
                                    run_arg_get_runpath( run_arg ) ,
-                                   model_config_get_data_root( enkf_state->shared_info->model_config ) ,
+                                   model_config_get_data_root( model_config ) ,
                                    enkf_state->subst_list,
                                    umask);
 
@@ -1058,9 +1038,9 @@ static bool enkf_state_complete_forward_modelOK(enkf_state_type * enkf_state , r
 
 
 bool enkf_state_complete_forward_modelOK__(void * arg ) {
-  arg_pack_type * arg_pack = arg_pack_safe_cast( arg );
-  enkf_state_type * enkf_state = enkf_state_safe_cast( arg_pack_iget_ptr( arg_pack , 0 ));
-  run_arg_type * run_arg = run_arg_safe_cast( arg_pack_iget_ptr( arg_pack , 1 ));
+  callback_arg_type * callback_arg = callback_arg_safe_cast( arg );
+  run_arg_type * run_arg = callback_arg->run_arg;
+  enkf_state_type * enkf_state = callback_arg->enkf_state;
 
   return enkf_state_complete_forward_modelOK( enkf_state , run_arg);
 }
@@ -1083,13 +1063,8 @@ static bool enkf_state_complete_forward_model_EXIT_handler__(run_arg_type * run_
 
 
 static bool enkf_state_complete_forward_model_EXIT_handler(void * arg) {
-  arg_pack_type * arg_pack = arg_pack_safe_cast( arg );
-  /*
-    The enkf_state instance which is the first argument in the arg_pack is
-    not used.
-  */
-  run_arg_type * run_arg = run_arg_safe_cast( arg_pack_iget_ptr( arg_pack , 1 ) );
-
+  callback_arg_type * callback_arg = callback_arg_safe_cast( arg );
+  run_arg_type * run_arg = callback_arg->run_arg;
   return enkf_state_complete_forward_model_EXIT_handler__( run_arg);
 }
 
@@ -1116,7 +1091,7 @@ bool enkf_state_complete_forward_modelEXIT__(void * arg ) {
 
 static void enkf_state_internal_retry(enkf_state_type * enkf_state , run_arg_type * run_arg) {
   const ensemble_config_type * ens_config = enkf_state->ensemble_config;
-  rng_type * rng = enkf_state->rng;
+  rng_type * rng = NULL;
   const int iens = run_arg_get_iens( run_arg );
 
   res_log_add_fmt_message(LOG_ERROR, NULL,
@@ -1138,16 +1113,16 @@ static void enkf_state_internal_retry(enkf_state_type * enkf_state , run_arg_typ
     stringlist_free( init_keys );
 
     /* Possibly clear the directory and do a FULL rewrite of ALL the necessary files. */
-    enkf_state_init_eclipse( enkf_state , run_arg  );
+    enkf_state_init_eclipse( enkf_state , enkf_state->shared_info->ecl_config, run_arg  );
     run_arg_increase_submit_count( run_arg );
   }
 }
 
 
 bool enkf_state_complete_forward_modelRETRY__(void * arg ) {
-  arg_pack_type * arg_pack = arg_pack_safe_cast( arg );
-  enkf_state_type * enkf_state = enkf_state_safe_cast( arg_pack_iget_ptr( arg_pack , 0 ) );
-  run_arg_type * run_arg = run_arg_safe_cast( arg_pack_iget_ptr( arg_pack , 1 ) );
+  callback_arg_type * callback_arg = callback_arg_safe_cast( arg );
+  run_arg_type * run_arg = callback_arg->run_arg;
+  enkf_state_type * enkf_state = callback_arg->enkf_state;
 
   if (run_arg_can_retry(run_arg)) {
     enkf_state_internal_retry(enkf_state, run_arg);
@@ -1162,13 +1137,6 @@ bool enkf_state_complete_forward_modelRETRY__(void * arg ) {
 /*****************************************************************/
 
 
-rng_type * enkf_state_get_rng( const enkf_state_type * enkf_state ) {
-  return enkf_state->rng;
-}
-
-unsigned int enkf_state_get_random( enkf_state_type * enkf_state ) {
-  return rng_forward( enkf_state->rng );
-}
 
 
 
@@ -1185,7 +1153,7 @@ const ensemble_config_type * enkf_state_get_ensemble_config( const enkf_state_ty
   The writing of restart file is delegated to enkf_state_write_restart_file().
 */
 
-void enkf_state_ecl_write(enkf_state_type * enkf_state, const run_arg_type * run_arg , enkf_fs_type * fs) {
+void enkf_state_ecl_write(const ensemble_config_type * ens_config, const model_config_type * model_config, const run_arg_type * run_arg , enkf_fs_type * fs) {
   /**
      This iteration manipulates the hash (thorugh the enkf_state_del_node() call)
 
@@ -1193,16 +1161,13 @@ void enkf_state_ecl_write(enkf_state_type * enkf_state, const run_arg_type * run
      T H I S  W I L L  D E A D L O C K  I F  T H E   H A S H _ I T E R  A P I   I S   U S E D.
      -----------------------------------------------------------------------------------------
   */
-
-  const shared_info_type * shared_info   = enkf_state->shared_info;
-  const model_config_type * model_config = shared_info->model_config;
-  int iens                               = enkf_state_get_iens( enkf_state );
+  int iens                               = run_arg_get_iens( run_arg );
   const char * base_name                 = model_config_get_gen_kw_export_name(model_config);
   value_export_type * export             = value_export_alloc( run_arg_get_runpath( run_arg ), base_name );
 
-  stringlist_type * key_list = ensemble_config_alloc_keylist_from_var_type( enkf_state->ensemble_config , PARAMETER );
+  stringlist_type * key_list = ensemble_config_alloc_keylist_from_var_type( ens_config , PARAMETER );
   for (int ikey = 0; ikey < stringlist_get_size( key_list ); ikey++) {
-    enkf_config_node_type * config_node = ensemble_config_get_node( enkf_state->ensemble_config, stringlist_iget( key_list , ikey));
+    enkf_config_node_type * config_node = ensemble_config_get_node( ens_config, stringlist_iget( key_list , ikey));
     enkf_node_type * enkf_node = enkf_node_alloc( config_node );
     bool forward_init = enkf_node_use_forward_init( enkf_node );
     node_id_type node_id = {.report_step = run_arg_get_step1(run_arg),

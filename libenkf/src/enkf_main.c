@@ -51,6 +51,8 @@
 #include <ert/ecl/ecl_io_config.h>
 
 #include <ert/res_util/subst_list.h>
+#include <ert/res_util/res_log.h>
+#include <ert/res_util/res_util_defaults.h>
 
 #include <ert/job_queue/job_queue.h>
 #include <ert/job_queue/job_queue_manager.h>
@@ -104,10 +106,10 @@
 #include <ert/enkf/analysis_config.h>
 #include <ert/enkf/analysis_iter_config.h>
 #include <ert/enkf/field.h>
-#include <ert/res_util/res_log.h>
 #include <ert/enkf/ert_run_context.h>
 #include <ert/enkf/run_arg.h>
-#include <ert/res_util/res_util_defaults.h>
+#include <ert/enkf/callback_arg.h>
+
 
 /**/
 
@@ -1304,13 +1306,7 @@ void enkf_main_isubmit_job( enkf_main_type * enkf_main , run_arg_type * run_arg 
 
   // The job_queue_node will take ownership of this arg_pack; and destroy it when
   // the job_queue_node is discarded.
-  arg_pack_type             * callback_arg      = arg_pack_alloc();
-
-  /*
-    Prepare the job and submit it to the queue
-  */
-  arg_pack_append_ptr( callback_arg , enkf_state );
-  arg_pack_append_ptr( callback_arg , run_arg );
+  callback_arg_type * callback_arg = callback_arg_alloc( run_arg , enkf_state );
 
   {
     int queue_index = job_queue_add_job( job_queue ,
@@ -1344,11 +1340,12 @@ void * enkf_main_icreate_run_path( enkf_main_type * enkf_main, run_arg_type * ru
   if (init_mode != INIT_NONE) {
     stringlist_type * param_list = ensemble_config_alloc_keylist_from_var_type(enkf_main_get_ensemble_config(enkf_main), PARAMETER );
     enkf_fs_type * init_fs = run_arg_get_sim_fs( run_arg );
-    enkf_state_initialize( enkf_state , init_fs , param_list , init_mode);
+    rng_type * rng = rng_manager_iget( enkf_main->rng_manager, run_arg_get_iens( run_arg ));
+    enkf_state_initialize( enkf_state , rng, init_fs , param_list , init_mode);
     stringlist_free( param_list );
   }
 
-  enkf_state_init_eclipse( enkf_state , run_arg );
+  enkf_state_init_eclipse( enkf_state , enkf_main_get_ecl_config(enkf_main), run_arg );
   return NULL;
 }
 
@@ -2477,6 +2474,10 @@ queue_config_type * enkf_main_get_queue_config(enkf_main_type * enkf_main ) {
   return site_config_get_queue_config(
                 enkf_main_get_site_config(enkf_main)
         );
+}
+
+rng_manager_type * enkf_main_get_rng_manager(const enkf_main_type * enkf_main ) {
+  return enkf_main->rng_manager;
 }
 
 #include "enkf_main_ensemble.c"
