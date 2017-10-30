@@ -904,10 +904,11 @@ static void enkf_state_set_dynamic_subst_kw(enkf_state_type * enkf_state , const
    will become completely inconsistent. We just don't allow that!
 */
 
-void enkf_state_init_eclipse(enkf_state_type * enkf_state, const ecl_config_type * ecl_config, const run_arg_type * run_arg ) {
-  const ensemble_config_type * ens_config = enkf_state->ensemble_config;
-  const shared_info_type * shared_info = enkf_state->shared_info;
-  const model_config_type * model_config = shared_info->model_config;
+void enkf_state_init_eclipse(enkf_state_type * enkf_state,
+                             const ensemble_config_type * ens_config,
+                             const ecl_config_type * ecl_config,
+                             const model_config_type * model_config,
+                             const run_arg_type * run_arg ) {
 
   util_make_path(run_arg_get_runpath( run_arg ));
   if (ecl_config_get_schedule_target( ecl_config ) != NULL) {
@@ -930,7 +931,7 @@ void enkf_state_init_eclipse(enkf_state_type * enkf_state, const ecl_config_type
      generally loaded from different timesteps:
   */
   enkf_state_set_dynamic_subst_kw(  enkf_state , run_arg );
-  ert_templates_instansiate( shared_info->templates , run_arg_get_runpath( run_arg ) , enkf_state->subst_list );
+  ert_templates_instansiate( enkf_state->shared_info->templates , run_arg_get_runpath( run_arg ) , enkf_state->subst_list );
   enkf_state_ecl_write(ens_config, model_config , run_arg , run_arg_get_sim_fs( run_arg ));
 
   if (ecl_config_have_eclbase( ecl_config )) {
@@ -949,7 +950,7 @@ void enkf_state_init_eclipse(enkf_state_type * enkf_state, const ecl_config_type
     }
   }
 
-  mode_t umask = site_config_get_umask(shared_info->site_config);
+  mode_t umask = site_config_get_umask(enkf_state->shared_info->site_config);
 
   /* This is where the job script is created */
   forward_model_formatted_fprintf( model_config_get_forward_model( model_config ) ,
@@ -971,7 +972,10 @@ void enkf_state_init_eclipse(enkf_state_type * enkf_state, const ecl_config_type
     be called several times - MUST BE REENTRANT.
 */
 
-static bool enkf_state_complete_forward_modelOK(enkf_state_type * enkf_state , run_arg_type * run_arg) {
+static bool enkf_state_complete_forward_modelOK(ensemble_config_type * ens_config,
+                                                model_config_type * model_config,
+                                                const ecl_config_type * ecl_config,
+                                                run_arg_type * run_arg) {
   const int iens = run_arg_get_iens( run_arg );
   int result;
 
@@ -986,14 +990,7 @@ static bool enkf_state_complete_forward_modelOK(enkf_state_type * enkf_state , r
                           "[%03d:%04d-%04d] Forward model complete - starting to load results.",
                           iens , run_arg_get_step1(run_arg), run_arg_get_step2(run_arg));
 
-  {
-    ensemble_config_type * ens_config = enkf_state->ensemble_config;
-    model_config_type * model_config = enkf_state->shared_info->model_config;
-    const ecl_config_type * ecl_config = enkf_state->shared_info->ecl_config;
-
-    result = enkf_state_load_from_forward_model__( ens_config, model_config, ecl_config, run_arg, NULL);
-  }
-
+  result = enkf_state_load_from_forward_model__( ens_config, model_config, ecl_config, run_arg, NULL);
 
   if (result & REPORT_STEP_INCOMPATIBLE) {
     // If refcase has been used for observations: crash and burn.
@@ -1022,11 +1019,12 @@ static bool enkf_state_complete_forward_modelOK(enkf_state_type * enkf_state , r
 
 
 bool enkf_state_complete_forward_modelOK__(void * arg ) {
-  callback_arg_type * callback_arg = callback_arg_safe_cast( arg );
-  run_arg_type * run_arg = callback_arg->run_arg;
-  enkf_state_type * enkf_state = callback_arg->enkf_state;
+  callback_arg_type * cb_arg = callback_arg_safe_cast( arg );
 
-  return enkf_state_complete_forward_modelOK( enkf_state , run_arg);
+  return enkf_state_complete_forward_modelOK( cb_arg->ens_config,
+                                              cb_arg->model_config,
+                                              cb_arg->ecl_config,
+                                              cb_arg->run_arg );
 }
 
 
@@ -1073,9 +1071,13 @@ bool enkf_state_complete_forward_modelEXIT__(void * arg ) {
 
 
 
-static void enkf_state_internal_retry(enkf_state_type * enkf_state , run_arg_type * run_arg) {
-  const ensemble_config_type * ens_config = enkf_state->ensemble_config;
-  rng_type * rng = NULL;
+static void enkf_state_internal_retry(enkf_state_type * enkf_state,
+                                      ensemble_config_type * ens_config,
+                                      const ecl_config_type * ecl_config,
+                                      const model_config_type * model_config,
+                                      rng_type * rng,
+                                      run_arg_type * run_arg) {
+
   const int iens = run_arg_get_iens( run_arg );
 
   res_log_add_fmt_message(LOG_ERROR, NULL,
@@ -1097,19 +1099,23 @@ static void enkf_state_internal_retry(enkf_state_type * enkf_state , run_arg_typ
     stringlist_free( init_keys );
 
     /* Possibly clear the directory and do a FULL rewrite of ALL the necessary files. */
-    enkf_state_init_eclipse( enkf_state , enkf_state->shared_info->ecl_config, run_arg  );
+    enkf_state_init_eclipse( enkf_state , ens_config, ecl_config, model_config, run_arg  );
     run_arg_increase_submit_count( run_arg );
   }
 }
 
 
 bool enkf_state_complete_forward_modelRETRY__(void * arg ) {
-  callback_arg_type * callback_arg = callback_arg_safe_cast( arg );
-  run_arg_type * run_arg = callback_arg->run_arg;
-  enkf_state_type * enkf_state = callback_arg->enkf_state;
+  callback_arg_type * cb_arg = callback_arg_safe_cast( arg );
+  run_arg_type * run_arg = cb_arg->run_arg;
 
   if (run_arg_can_retry(run_arg)) {
-    enkf_state_internal_retry(enkf_state, run_arg);
+    enkf_state_internal_retry( cb_arg->enkf_state,
+                               cb_arg->ens_config,
+                               cb_arg->ecl_config,
+                               cb_arg->model_config, 
+                               cb_arg->rng,
+                               cb_arg->run_arg );
     return true;
   }
 

@@ -20,9 +20,13 @@
 #define CALLBACK_ARG_H
 
 #include <ert/util/type_macros.h>
+#include <ert/util/rng.h>
 
 #include <ert/enkf/run_arg.h>
 #include <ert/enkf/enkf_state.h>
+#include <ert/enkf/ensemble_config.h>
+#include <ert/enkf/ecl_config.h>
+#include <ert/enkf/model_config.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -34,9 +38,18 @@ struct callback_arg_struct {
   UTIL_TYPE_ID_DECLARATION;
   run_arg_type    * run_arg;
   enkf_state_type * enkf_state;
+  ensemble_config_type * ens_config;
+  model_config_type * model_config;
+  ecl_config_type * ecl_config;
+  rng_type * rng;
 };
 
-callback_arg_type * callback_arg_alloc(run_arg_type * run_arg, enkf_state_type * enkf_state);
+callback_arg_type * callback_arg_alloc(ensemble_config_type * ens_config,
+                                       model_config_type * model_config,
+                                       const ecl_config_type * ecl_config,
+                                       run_arg_type * run_arg,
+                                       enkf_state_type * enkf_state,
+                                       rng_type * rng);
 void                callback_arg_free(callback_arg_type * cb_arg);
 
 UTIL_IS_INSTANCE_HEADER( callback_arg );

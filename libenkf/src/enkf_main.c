@@ -1306,7 +1306,12 @@ void enkf_main_isubmit_job( enkf_main_type * enkf_main , run_arg_type * run_arg 
 
   // The job_queue_node will take ownership of this arg_pack; and destroy it when
   // the job_queue_node is discarded.
-  callback_arg_type * callback_arg = callback_arg_alloc( run_arg , enkf_state );
+  callback_arg_type * callback_arg = callback_arg_alloc( res_config_get_ensemble_config(enkf_main->res_config),
+                                                         res_config_get_model_config(enkf_main->res_config ),
+                                                         res_config_get_ecl_config(enkf_main->res_config ),
+                                                         run_arg ,
+                                                         enkf_state ,
+                                                         rng_manager_iget( enkf_main->rng_manager, run_arg_get_iens(run_arg)) );
 
   {
     int queue_index = job_queue_add_job( job_queue ,
@@ -1345,7 +1350,11 @@ void * enkf_main_icreate_run_path( enkf_main_type * enkf_main, run_arg_type * ru
     stringlist_free( param_list );
   }
 
-  enkf_state_init_eclipse( enkf_state , enkf_main_get_ecl_config(enkf_main), run_arg );
+  enkf_state_init_eclipse( enkf_state ,
+                           enkf_main_get_ensemble_config( enkf_main ),
+                           enkf_main_get_ecl_config(enkf_main),
+                           enkf_main_get_model_config(enkf_main),
+                           run_arg );
   return NULL;
 }
 

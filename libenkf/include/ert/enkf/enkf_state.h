@@ -73,7 +73,11 @@ typedef struct enkf_state_struct    enkf_state_type;
   int enkf_state_forward_init(const ensemble_config_type * ens_config,
 			      run_arg_type * run_arg);
 
-  void enkf_state_init_eclipse(enkf_state_type *enkf_state, const ecl_config_type * ecl_config,  const run_arg_type * run_arg );
+  void enkf_state_init_eclipse(enkf_state_type * enkf_state,
+                               const ensemble_config_type * ens_config,
+                               const ecl_config_type * ecl_config,
+                               const model_config_type * model_config,
+                               const run_arg_type * run_arg );
 
   enkf_state_type  * enkf_state_alloc(int ,
                                       rng_type        * main_rng ,
