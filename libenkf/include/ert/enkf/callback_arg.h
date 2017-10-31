@@ -27,6 +27,7 @@
 #include <ert/enkf/ensemble_config.h>
 #include <ert/enkf/ecl_config.h>
 #include <ert/enkf/model_config.h>
+#include <ert/enkf/res_config.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -36,20 +37,18 @@ typedef struct callback_arg_struct callback_arg_type;
 
 struct callback_arg_struct {
   UTIL_TYPE_ID_DECLARATION;
+  res_config_type * res_config;
   run_arg_type    * run_arg;
   enkf_state_type * enkf_state;
-  ensemble_config_type * ens_config;
-  model_config_type * model_config;
-  ecl_config_type * ecl_config;
   rng_type * rng;
 };
 
-callback_arg_type * callback_arg_alloc(ensemble_config_type * ens_config,
-                                       model_config_type * model_config,
-                                       const ecl_config_type * ecl_config,
+
+callback_arg_type * callback_arg_alloc(const res_config_type * res_config,
                                        run_arg_type * run_arg,
-                                       enkf_state_type * enkf_state,
-                                       rng_type * rng);
+                                       rng_type * rng,
+                                       enkf_state_type * enkf_state);
+
 void                callback_arg_free(callback_arg_type * cb_arg);
 
 UTIL_IS_INSTANCE_HEADER( callback_arg );

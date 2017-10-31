@@ -102,10 +102,6 @@ stringlist_type * enkf_main_alloc_caselist( const enkf_main_type * enkf_main ) {
 }
 
 
-void enkf_main_set_case_table( enkf_main_type * enkf_main , const char * case_table_file ) {
-  model_config_set_case_table(enkf_main_get_model_config(enkf_main), enkf_main->ens_size , case_table_file );
-}
-
 
 
 static void * enkf_main_initialize_from_scratch_mt(void * void_arg) {

@@ -35,10 +35,6 @@ void enkf_state_add_node(enkf_state_type * enkf_state , const char * node_key , 
       enkf_node = enkf_node_alloc( config );
 
     hash_insert_hash_owned_ref(enkf_state->node_hash , node_key , enkf_node, enkf_node_free__);
-
-    /* Setting the global subst list so that the GEN_KW templates can contain e.g. <IENS> and <CWD>. */
-    if (enkf_node_get_impl_type( enkf_node ) == GEN_KW)
-      gen_kw_set_subst_parent( enkf_node_value_ptr( enkf_node ) , enkf_state->subst_list );
   }
 }
 

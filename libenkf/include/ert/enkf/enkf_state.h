@@ -45,6 +45,7 @@ extern "C" {
 #include <ert/enkf/ecl_config.h>
 #include <ert/enkf/member_config.h>
 #include <ert/enkf/ensemble_config.h>
+#include <ert/enkf/res_config.h>
 #include <ert/enkf/ert_template.h>
 #include <ert/enkf/enkf_fs.h>
 #include <ert/enkf/enkf_types.h>
@@ -74,20 +75,17 @@ typedef struct enkf_state_struct    enkf_state_type;
 			      run_arg_type * run_arg);
 
   void enkf_state_init_eclipse(enkf_state_type * enkf_state,
-                               const ensemble_config_type * ens_config,
-                               const ecl_config_type * ecl_config,
-                               const model_config_type * model_config,
+                               const res_config_type * res_config,
                                const run_arg_type * run_arg );
 
   enkf_state_type  * enkf_state_alloc(int ,
                                       rng_type        * main_rng ,
-                                      const char * casename ,
                                       model_config_type * ,
                                       ensemble_config_type * ,
                                       const site_config_type * ,
                                       const ecl_config_type * ,
-                                      ert_templates_type * templates,
-                                      subst_list_type    * parent_subst);
+                                      ert_templates_type * templates);
+
   void               enkf_state_add_node(enkf_state_type * , const char *  , const enkf_config_node_type * );
   void               enkf_state_load_ecl_restart(enkf_state_type * , bool , int );
   void               enkf_state_sample(enkf_state_type * , int);
@@ -102,8 +100,6 @@ typedef struct enkf_state_struct    enkf_state_type;
   const char       * enkf_state_get_run_path(const enkf_state_type * );
 
   run_status_type    enkf_state_get_simple_run_status(const enkf_state_type * state);
-  void               enkf_state_add_subst_kw(enkf_state_type * enkf_state , const char * kw , const char * value , const char * doc_string);
-  subst_list_type    * enkf_state_get_subst_kw( enkf_state_type * enkf_state );
   const ensemble_config_type * enkf_state_get_ensemble_config( const enkf_state_type * enkf_state );
 
 /******************************************************************/

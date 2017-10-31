@@ -241,7 +241,6 @@ extern "C" {
   bool              enkf_main_case_is_current(const enkf_main_type * enkf_main , const char * case_path);
   char *            enkf_main_read_alloc_current_case_name(const enkf_main_type * enkf_main);
   stringlist_type * enkf_main_alloc_caselist( const enkf_main_type * enkf_main );
-  void              enkf_main_set_case_table( enkf_main_type * enkf_main , const char * case_table_file );
 
   void              enkf_main_initialize_from_scratch(enkf_main_type * enkf_main ,
 						      enkf_fs_type * init_fs,
