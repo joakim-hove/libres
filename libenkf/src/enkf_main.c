@@ -1298,7 +1298,6 @@ static void enkf_main_monitor_job_queue ( const enkf_main_type * enkf_main, job_
 
 void enkf_main_isubmit_job( enkf_main_type * enkf_main , run_arg_type * run_arg , job_queue_type * job_queue) {
   const ecl_config_type * ecl_config = enkf_main_get_ecl_config( enkf_main );
-  enkf_state_type * enkf_state = enkf_main->ensemble[ run_arg_get_iens(run_arg) ];
   const queue_config_type * queue_config    = enkf_main_get_queue_config(enkf_main);
   const char * job_script                   = queue_config_get_job_script( queue_config );
 
@@ -1312,8 +1311,7 @@ void enkf_main_isubmit_job( enkf_main_type * enkf_main , run_arg_type * run_arg 
 
   callback_arg_type * callback_arg = callback_arg_alloc( enkf_main->res_config,
                                                          run_arg,
-                                                         rng_manager_iget( enkf_main->rng_manager, run_arg_get_iens(run_arg)),
-                                                         enkf_state);
+                                                         rng_manager_iget( enkf_main->rng_manager, run_arg_get_iens(run_arg)));
   {
     int queue_index = job_queue_add_job( job_queue ,
                                          job_script ,
@@ -1351,8 +1349,7 @@ void * enkf_main_icreate_run_path( enkf_main_type * enkf_main, run_arg_type * ru
     stringlist_free( param_list );
   }
 
-  enkf_state_init_eclipse( enkf_state ,
-                           enkf_main->res_config,
+  enkf_state_init_eclipse( enkf_main->res_config,
                            run_arg );
   return NULL;
 }

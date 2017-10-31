@@ -43,7 +43,6 @@ extern "C" {
 #include <ert/enkf/model_config.h>
 #include <ert/enkf/site_config.h>
 #include <ert/enkf/ecl_config.h>
-#include <ert/enkf/member_config.h>
 #include <ert/enkf/ensemble_config.h>
 #include <ert/enkf/res_config.h>
 #include <ert/enkf/ert_template.h>
@@ -74,8 +73,7 @@ typedef struct enkf_state_struct    enkf_state_type;
   int enkf_state_forward_init(const ensemble_config_type * ens_config,
 			      run_arg_type * run_arg);
 
-  void enkf_state_init_eclipse(enkf_state_type * enkf_state,
-                               const res_config_type * res_config,
+  void enkf_state_init_eclipse(const res_config_type * res_config,
                                const run_arg_type * run_arg );
 
   enkf_state_type  * enkf_state_alloc(int ,
@@ -96,7 +94,6 @@ typedef struct enkf_state_struct    enkf_state_type;
   void               enkf_state_serialize(enkf_state_type * , size_t);
   void               enkf_state_set_iens(enkf_state_type *  , int );
   int                enkf_state_get_iens(const enkf_state_type * );
-  member_config_type *enkf_state_get_member_config(const enkf_state_type * enkf_state);
   const char       * enkf_state_get_run_path(const enkf_state_type * );
 
   run_status_type    enkf_state_get_simple_run_status(const enkf_state_type * state);

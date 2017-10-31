@@ -29,13 +29,11 @@ void callback_arg_free(callback_arg_type * cb_arg) {
 
 
 callback_arg_type * callback_arg_alloc(const res_config_type * res_config,
-                                       run_arg_type * run_arg,
-                                       rng_type * rng,
-                                       enkf_state_type * enkf_state)
+                                       const run_arg_type * run_arg,
+                                       rng_type * rng)
 {
   callback_arg_type * cb = util_malloc( sizeof * cb );
   cb->run_arg = run_arg;
-  cb->enkf_state = enkf_state;
   cb->rng = rng;
   cb->res_config = res_config;
   return cb;

@@ -23,7 +23,6 @@ class EnKFState(BaseCClass):
     TYPE_NAME       = "enkf_state"
     _free           = EnkfPrototype("void* enkf_state_free( enkf_state )")
     _add_subst_kw   = EnkfPrototype("void enkf_state_add_subst_kw( enkf_state , char* , char* , char*)")
-    _get_subst_list = EnkfPrototype("subst_list_ref enkf_state_get_subst_list( enkf_state )")
     _get_ens_config = EnkfPrototype("ens_config_ref enkf_state_get_ensemble_config( enkf_state )")
     _initialize     = EnkfPrototype("void enkf_state_initialize( enkf_state , enkf_fs , stringlist , enkf_init_mode_enum)")
     
@@ -48,16 +47,12 @@ class EnKFState(BaseCClass):
         else:
             raise TypeError("The value argument must be a string")
 
-    def getDataKW(self):
-        """
-        Will return the substitution map for this realisation.
-        """
-        return self._get_subst_list( )
-
 
     def ensembleConfig(self):
         """ @rtype: EnsembleConfig """
         return self._get_ens_config( )
+
+
     def initialize( self , fs , param_list = None , init_mode = EnkfInitModeEnum.INIT_CONDITIONAL):
         if param_list is None:
             ens_config = self.ensembleConfig( )

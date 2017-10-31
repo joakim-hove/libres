@@ -737,78 +737,6 @@ void enkf_state_free(enkf_state_type *enkf_state) {
 
 
 
-/**
-   This function will set all the subst_kw key=value pairs which
-   change with report step.
-*/
-
-static void enkf_state_set_dynamic_subst_kw(enkf_state_type * enkf_state , const run_arg_type * run_arg) {
-  const char * run_path = run_arg_get_runpath(run_arg);
-  const char * job_name = run_arg_get_job_name( run_arg );
-  int step1 = run_arg_get_step1(run_arg);
-  int step2 = run_arg_get_step2(run_arg);
-  const ecl_config_type * ecl_config = enkf_state->shared_info->ecl_config;
-
-
-  /* Time step */
-  char * step1_s           = util_alloc_sprintf("%d" , step1);
-  char * step2_s           = util_alloc_sprintf("%d" , step2);
-  char * step1_s04         = util_alloc_sprintf("%04d" , step1);
-  char * step2_s04         = util_alloc_sprintf("%04d" , step2);
-
-  enkf_state_add_subst_kw(enkf_state , "TSTEP1"        , step1_s       , NULL);
-  enkf_state_add_subst_kw(enkf_state , "TSTEP2"        , step2_s       , NULL);
-  enkf_state_add_subst_kw(enkf_state , "TSTEP1_04"     , step1_s04     , NULL);
-  enkf_state_add_subst_kw(enkf_state , "TSTEP2_04"     , step2_s04     , NULL);
-
-  free(step1_s);
-  free(step2_s);
-  free(step1_s04);
-  free(step2_s04);
-
-
-  /* Restart file names and RESTART keyword in datafile. */
-  if (ecl_config_have_eclbase( ecl_config )) {
-    printf("run_mde:%d \n",run_arg_get_run_mode(run_arg));
-    if (run_arg_get_run_mode(run_arg) != INIT_ONLY) {
-      const bool fmt_file  = ecl_config_get_formatted( ecl_config );
-      char * restart_file1 = ecl_util_alloc_filename(NULL , job_name , ECL_RESTART_FILE , fmt_file , step1);
-      char * restart_file2 = ecl_util_alloc_filename(NULL , job_name , ECL_RESTART_FILE , fmt_file , step2);
-
-      enkf_state_add_subst_kw(enkf_state , "RESTART_FILE1" , restart_file1 , NULL);
-      enkf_state_add_subst_kw(enkf_state , "RESTART_FILE2" , restart_file2 , NULL);
-
-      free(restart_file1);
-      free(restart_file2);
-
-      if (step1 > 0) {
-        char * data_initialize = util_alloc_sprintf("RESTART\n   \'%s\'  %d  /\n" , job_name , step1);
-        enkf_state_add_subst_kw(enkf_state , "INIT" , data_initialize , NULL);
-        free(data_initialize);
-      }
-    }
-  }
-
-
-  /**
-     The <INIT> magic string:
-  */
-  if (step1 == 0) {
-    const char * init_file = ecl_config_get_equil_init_file(ecl_config);
-    if (init_file != NULL) {
-      char * tmp_include = util_alloc_sprintf("INCLUDE\n   \'%s\' /\n",init_file);
-      enkf_state_add_subst_kw(enkf_state , "INIT" , tmp_include , NULL);
-      free(tmp_include);
-    } /*
-         if init_file == NULL that means the user has not supplied the INIT_SECTION keyword,
-         and the EQUIL (or whatever) info to initialize the model is inlined in the datafile.
-      */
-  }
-}
-
-
-
-
 
 
 
@@ -826,8 +754,7 @@ static void enkf_state_set_dynamic_subst_kw(enkf_state_type * enkf_state , const
    will become completely inconsistent. We just don't allow that!
 */
 
-void enkf_state_init_eclipse(enkf_state_type * enkf_state,
-                             const res_config_type * res_config,
+void enkf_state_init_eclipse(const res_config_type * res_config,
                              const run_arg_type * run_arg ) {
 
   ensemble_config_type * ens_config = res_config_get_ensemble_config( res_config );
@@ -864,7 +791,6 @@ void enkf_state_init_eclipse(enkf_state_type * enkf_state,
     subst_list_append_ref( subst_list , "RUNPATH", runpath, NULL );
 
 
-    enkf_state_set_dynamic_subst_kw(  enkf_state , run_arg );
     ert_templates_instansiate( res_config_get_templates( res_config ) , run_arg_get_runpath( run_arg ) , subst_list );
     enkf_state_ecl_write(ens_config, model_config , run_arg , run_arg_get_sim_fs( run_arg ));
 
@@ -884,7 +810,7 @@ void enkf_state_init_eclipse(enkf_state_type * enkf_state,
       }
     }
 
-    mode_t umask = site_config_get_umask(enkf_state->shared_info->site_config);
+    mode_t umask = site_config_get_umask(res_config_get_site_config( res_config ));
 
     /* This is where the job script is created */
     forward_model_formatted_fprintf( model_config_get_forward_model( model_config ) ,
@@ -908,8 +834,8 @@ void enkf_state_init_eclipse(enkf_state_type * enkf_state,
     be called several times - MUST BE REENTRANT.
 */
 
-static bool enkf_state_complete_forward_modelOK(res_config_type * res_config,
-                                                run_arg_type * run_arg) {
+static bool enkf_state_complete_forward_modelOK(const res_config_type * res_config,
+                                                const run_arg_type * run_arg) {
 
   ensemble_config_type * ens_config = res_config_get_ensemble_config( res_config );
   const ecl_config_type * ecl_config = res_config_get_ecl_config( res_config );
@@ -965,7 +891,7 @@ bool enkf_state_complete_forward_modelOK__(void * arg ) {
 
 
 
-static bool enkf_state_complete_forward_model_EXIT_handler__(run_arg_type * run_arg) {
+static bool enkf_state_complete_forward_model_EXIT_handler__(const run_arg_type * run_arg) {
   const int iens = run_arg_get_iens( run_arg );
   res_log_add_fmt_message(LOG_ERROR, NULL,
                           "[%03d:%04d-%04d] FAILED COMPLETELY.",
@@ -1007,10 +933,9 @@ bool enkf_state_complete_forward_modelEXIT__(void * arg ) {
 
 
 
-static void enkf_state_internal_retry(enkf_state_type * enkf_state,
-                                      const res_config_type * res_config,
-                                      rng_type * rng,
-                                      run_arg_type * run_arg) {
+static void enkf_state_internal_retry(const res_config_type * res_config,
+                                      const run_arg_type * run_arg,
+                                      rng_type * rng) {
   ensemble_config_type * ens_config = res_config_get_ensemble_config( res_config );
   const int iens = run_arg_get_iens( run_arg );
 
@@ -1033,7 +958,7 @@ static void enkf_state_internal_retry(enkf_state_type * enkf_state,
     stringlist_free( init_keys );
 
     /* Possibly clear the directory and do a FULL rewrite of ALL the necessary files. */
-    enkf_state_init_eclipse( enkf_state , res_config, run_arg);
+    enkf_state_init_eclipse(res_config, run_arg);
     run_arg_increase_submit_count( run_arg );
   }
 }
@@ -1041,13 +966,11 @@ static void enkf_state_internal_retry(enkf_state_type * enkf_state,
 
 bool enkf_state_complete_forward_modelRETRY__(void * arg ) {
   callback_arg_type * cb_arg = callback_arg_safe_cast( arg );
-  run_arg_type * run_arg = cb_arg->run_arg;
 
-  if (run_arg_can_retry(run_arg)) {
-    enkf_state_internal_retry( cb_arg->enkf_state,
-                               cb_arg->res_config,
-                               cb_arg->rng,
-                               cb_arg->run_arg );
+  if (run_arg_can_retry(cb_arg->run_arg)) {
+    enkf_state_internal_retry( cb_arg->res_config,
+                               cb_arg->run_arg,
+                               cb_arg->rng);
     return true;
   }
 

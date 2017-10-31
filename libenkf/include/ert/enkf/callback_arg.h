@@ -23,10 +23,6 @@
 #include <ert/util/rng.h>
 
 #include <ert/enkf/run_arg.h>
-#include <ert/enkf/enkf_state.h>
-#include <ert/enkf/ensemble_config.h>
-#include <ert/enkf/ecl_config.h>
-#include <ert/enkf/model_config.h>
 #include <ert/enkf/res_config.h>
 
 #ifdef __cplusplus
@@ -37,17 +33,15 @@ typedef struct callback_arg_struct callback_arg_type;
 
 struct callback_arg_struct {
   UTIL_TYPE_ID_DECLARATION;
-  res_config_type * res_config;
-  run_arg_type    * run_arg;
-  enkf_state_type * enkf_state;
-  rng_type * rng;
+  const res_config_type * res_config;
+  const run_arg_type    * run_arg;
+  rng_type        * rng;
 };
 
 
 callback_arg_type * callback_arg_alloc(const res_config_type * res_config,
-                                       run_arg_type * run_arg,
-                                       rng_type * rng,
-                                       enkf_state_type * enkf_state);
+                                       const run_arg_type * run_arg,
+                                       rng_type * rng);
 
 void                callback_arg_free(callback_arg_type * cb_arg);
 

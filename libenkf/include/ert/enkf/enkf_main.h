@@ -50,7 +50,6 @@ extern "C" {
 #include <ert/enkf/enkf_state.h>
 #include <ert/enkf/obs_data.h>
 #include <ert/enkf/enkf_fs.h>
-#include <ert/enkf/member_config.h>
 #include <ert/enkf/enkf_obs.h>
 #include <ert/enkf/misfit_ensemble.h>
 #include <ert/enkf/analysis_config.h>
