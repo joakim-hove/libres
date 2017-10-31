@@ -316,10 +316,6 @@ class ResConfigTest(ExtendedTestCase):
                 ecl_config.getStartDate()
                 )
 
-        self.assertEqual(
-                config_data["ECLBASE"],
-                ecl_config.getEclBase()
-                )
 
         for extension in ["SMSPEC", "UNSMRY"]:
             self.assert_same_config_file(

@@ -50,6 +50,8 @@
 #include <ert/ecl/ecl_io_config.h>
 
 #include <ert/res_util/subst_list.h>
+#include <ert/res_util/res_log.h>
+#include <ert/res_util/res_util_defaults.h>
 
 #include <ert/job_queue/job_queue.h>
 #include <ert/job_queue/job_queue_manager.h>
@@ -109,6 +111,7 @@
 #include <ert/enkf/field.h>
 #include <ert/enkf/ert_run_context.h>
 #include <ert/enkf/run_arg.h>
+#include <ert/enkf/callback_arg.h>
 
 
 /**/
@@ -172,7 +175,6 @@ static void enkf_main_close_fs( enkf_main_type * enkf_main );
 static void enkf_main_init_fs( enkf_main_type * enkf_main );
 static void enkf_main_user_select_initial_fs(enkf_main_type * enkf_main );
 static void enkf_main_free_ensemble( enkf_main_type * enkf_main );
-static void enkf_main_init_jobname( enkf_main_type * enkf_main);
 static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
                                        enkf_fs_type * target_fs ,
                                        const bool_vector_type * ens_mask ,
@@ -1299,23 +1301,23 @@ static void enkf_main_monitor_job_queue ( const enkf_main_type * enkf_main, job_
 
 void enkf_main_isubmit_job( enkf_main_type * enkf_main , run_arg_type * run_arg , job_queue_type * job_queue) {
   const ecl_config_type * ecl_config = enkf_main_get_ecl_config( enkf_main );
-  enkf_state_type * enkf_state = enkf_main->ensemble[ run_arg_get_iens(run_arg) ];
-  const member_config_type  * member_config = enkf_state_get_member_config( enkf_state );
   const queue_config_type * queue_config    = enkf_main_get_queue_config(enkf_main);
   const char * job_script                   = queue_config_get_job_script( queue_config );
 
   const char * run_path                     = run_arg_get_runpath( run_arg );
 
-  // The job_queue_node will take ownership of this arg_pack; and destroy it when
-  // the job_queue_node is discarded.
-  arg_pack_type             * callback_arg      = arg_pack_alloc();
+  /*
+    The job_queue_node will take ownership of this callback_arg; and destroy it when
+    the job_queue_node is discarded. Observe that it will be internalized in the
+    queue layer as (void *) and will be discarded with free( arg ).
+  */
 
   /*
-    Prepare the job and submit it to the queue
+    The callback_arg pointer will leak for now.
   */
-  arg_pack_append_ptr( callback_arg , enkf_state );
-  arg_pack_append_ptr( callback_arg , run_arg );
-
+  callback_arg_type * callback_arg = callback_arg_alloc( enkf_main->res_config,
+                                                         run_arg,
+                                                         rng_manager_iget( enkf_main->rng_manager, run_arg_get_iens(run_arg)));
   {
     int queue_index = job_queue_add_job( job_queue ,
                                          job_script ,
@@ -1325,7 +1327,7 @@ void enkf_main_isubmit_job( enkf_main_type * enkf_main , run_arg_type * run_arg 
                                          callback_arg ,
                                          ecl_config_get_num_cpu( ecl_config ),
                                          run_path ,
-                                         member_config_get_jobname( member_config ) ,
+                                         run_arg_get_job_name( run_arg ),
                                          1,
                                          (const char *[1]) { run_path } );
     run_arg_set_queue_index( run_arg , queue_index );
@@ -1342,17 +1344,19 @@ void * enkf_main_icreate_run_path( enkf_main_type * enkf_main, run_arg_type * ru
                       run_arg_get_iens( run_arg ),
                       run_arg_get_iter( run_arg ),
                       run_arg_get_runpath( run_arg ),
-                      enkf_state_get_eclbase( enkf_state ));
+		      run_arg_get_job_name( run_arg ));
   }
 
   if (init_mode != INIT_NONE) {
     stringlist_type * param_list = ensemble_config_alloc_keylist_from_var_type(enkf_main_get_ensemble_config(enkf_main), PARAMETER );
     enkf_fs_type * init_fs = run_arg_get_sim_fs( run_arg );
-    enkf_state_initialize( enkf_state , init_fs , param_list , init_mode);
+    rng_type * rng = rng_manager_iget( enkf_main->rng_manager, run_arg_get_iens( run_arg ));
+    enkf_state_initialize( enkf_state , rng, init_fs , param_list , init_mode);
     stringlist_free( param_list );
   }
 
-  enkf_state_init_eclipse( enkf_state , run_arg );
+  enkf_state_init_eclipse( enkf_main->res_config,
+                           run_arg );
   return NULL;
 }
 
@@ -1800,7 +1804,13 @@ void enkf_main_run_iterated_ES(enkf_main_type * enkf_main,
 
 
 ert_run_context_type * enkf_main_alloc_ert_run_context_ENSEMBLE_EXPERIMENT(const enkf_main_type * enkf_main , enkf_fs_type * fs , bool_vector_type * iactive , int iter) {
-  return ert_run_context_alloc_ENSEMBLE_EXPERIMENT( fs , iactive , model_config_get_runpath_fmt(enkf_main_get_model_config(enkf_main)) , enkf_main_get_data_kw(enkf_main) , iter );
+  const model_config_type * model_config = enkf_main_get_model_config(enkf_main);
+  return ert_run_context_alloc_ENSEMBLE_EXPERIMENT( fs,
+						    iactive,
+						    model_config_get_runpath_fmt(model_config),
+						    model_config_get_jobname_fmt(model_config),
+						    enkf_main_get_data_kw(enkf_main),
+						    iter );
 }
 
 
@@ -2041,7 +2051,6 @@ enkf_main_type * enkf_main_alloc(const res_config_type * res_config, bool strict
   enkf_main_user_select_initial_fs(enkf_main);
   enkf_main_init_obs(enkf_main);
   enkf_main_add_ensemble_members(enkf_main);
-  enkf_main_init_jobname(enkf_main);
 
   return enkf_main;
 }
@@ -2292,7 +2301,12 @@ int enkf_main_load_from_forward_model_with_fs(enkf_main_type * enkf_main, int it
   int result[ens_size];
   model_config_type * model_config = enkf_main_get_model_config(enkf_main);
 
-  ert_run_context_type * run_context = ert_run_context_alloc_ENSEMBLE_EXPERIMENT( fs , iactive , model_config_get_runpath_fmt( model_config ) , enkf_main_get_data_kw(enkf_main) , iter );
+  ert_run_context_type * run_context = ert_run_context_alloc_ENSEMBLE_EXPERIMENT( fs,
+										  iactive,
+										  model_config_get_runpath_fmt( model_config ),
+										  model_config_get_jobname_fmt( model_config ),
+										  enkf_main_get_data_kw(enkf_main),
+										  iter );
   arg_pack_type ** arg_list = util_calloc( ens_size , sizeof * arg_list );
   thread_pool_type * tp     = thread_pool_alloc( 4 , true );  /* num_cpu - HARD coded. */
 
@@ -2471,6 +2485,10 @@ queue_config_type * enkf_main_get_queue_config(enkf_main_type * enkf_main ) {
   return site_config_get_queue_config(
                 enkf_main_get_site_config(enkf_main)
         );
+}
+
+rng_manager_type * enkf_main_get_rng_manager(const enkf_main_type * enkf_main ) {
+  return enkf_main->rng_manager;
 }
 
 #include "enkf_main_ensemble.c"

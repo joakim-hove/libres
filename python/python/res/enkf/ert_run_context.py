@@ -21,9 +21,9 @@ from ecl.util import PathFormat, StringList
 
 class ErtRunContext(BaseCClass):
     TYPE_NAME = "ert_run_context"
-    _alloc              = EnkfPrototype("void* ert_run_context_alloc( enkf_run_mode_enum , enkf_init_mode_enum, enkf_fs , enkf_fs, bool_vector, path_fmt ,subst_list, int)", bind = False)
-    _alloc_ensemble_experiment = EnkfPrototype("ert_run_context_obj ert_run_context_alloc_ENSEMBLE_EXPERIMENT( enkf_fs, bool_vector, path_fmt ,subst_list, int)", bind = False)
-    _alloc_ensemble_smoother = EnkfPrototype("ert_run_context_obj ert_run_context_alloc_SMOOTHER_RUN( enkf_fs , enkf_fs, bool_vector, path_fmt ,subst_list, int)", bind = False)
+    _alloc              = EnkfPrototype("void* ert_run_context_alloc( enkf_run_mode_enum , enkf_init_mode_enum, enkf_fs , enkf_fs, bool_vector, path_fmt ,char*, subst_list, int)", bind = False)
+    _alloc_ensemble_experiment = EnkfPrototype("ert_run_context_obj ert_run_context_alloc_ENSEMBLE_EXPERIMENT( enkf_fs, bool_vector, path_fmt ,char*, subst_list, int)", bind = False)
+    _alloc_ensemble_smoother = EnkfPrototype("ert_run_context_obj ert_run_context_alloc_SMOOTHER_RUN( enkf_fs , enkf_fs, bool_vector, path_fmt ,char*, subst_list, int)", bind = False)
     _alloc_runpath_list = EnkfPrototype("stringlist_obj ert_run_context_alloc_runpath_list(bool_vector, path_fmt, subst_list, int)", bind = False)
     _alloc_runpath      = EnkfPrototype("char* ert_run_context_alloc_runpath(int, path_fmt, subst_list, int)", bind = False)
     _get_size           = EnkfPrototype("int ert_run_context_get_size( ert_run_context )")
@@ -37,8 +37,8 @@ class ErtRunContext(BaseCClass):
     _get_sim_fs         = EnkfPrototype("enkf_fs_ref ert_run_context_get_sim_fs( ert_run_context )")
     _get_init_mode      = EnkfPrototype("enkf_init_mode_enum ert_run_context_get_init_mode( ert_run_context )")
     
-    def __init__(self , run_type , sim_fs, target_fs , mask , path_fmt , subst_list , itr, init_mode = EnkfInitModeEnum.INIT_CONDITIONAL):
-        c_ptr = self._alloc( run_type, init_mode, sim_fs, target_fs, mask , path_fmt , subst_list, itr)
+    def __init__(self , run_type , sim_fs, target_fs , mask , path_fmt , jobname_fmt, subst_list , itr, init_mode = EnkfInitModeEnum.INIT_CONDITIONAL):
+        c_ptr = self._alloc( run_type, init_mode, sim_fs, target_fs, mask , path_fmt , jobname_fmt, subst_list, itr)
         super(ErtRunContext, self).__init__(c_ptr)
 
         # The C object ert_run_context uses a shared object for the
@@ -49,8 +49,8 @@ class ErtRunContext(BaseCClass):
         self._subst_list = subst_list
 
     @classmethod
-    def ensemble_experiment(cls, sim_fs, mask, path_fmt, subst_list , itr):
-        run_context = cls._alloc_ensemble_experiment( sim_fs, mask , path_fmt , subst_list, itr)
+    def ensemble_experiment(cls, sim_fs, mask, path_fmt, jobname_fmt, subst_list , itr):
+        run_context = cls._alloc_ensemble_experiment( sim_fs, mask , path_fmt , jobname_fmt, subst_list, itr)
 
         # The C object ert_run_context uses a shared object for the
         # path_fmt, mask and subst_list objects. We therefor hold on
@@ -63,8 +63,8 @@ class ErtRunContext(BaseCClass):
 
 
     @classmethod
-    def ensemble_smoother(cls, sim_fs, target_fs, mask, path_fmt, subst_list , itr):
-        run_context = cls._alloc_ensemble_smoother( sim_fs , target_fs, mask , path_fmt , subst_list, itr)
+    def ensemble_smoother(cls, sim_fs, target_fs, mask, path_fmt, jobname_fmt, subst_list , itr):
+        run_context = cls._alloc_ensemble_smoother( sim_fs , target_fs, mask , path_fmt , jobname_fmt, subst_list, itr)
 
         # The C object ert_run_context uses a shared object for the
         # path_fmt, mask and subst_list objects. We therefor hold on

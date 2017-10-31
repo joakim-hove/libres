@@ -82,6 +82,22 @@ char * ert_run_context_alloc_runpath( int iens , const path_fmt_type * runpath_f
   return runpath;
 }
 
+static char * ert_run_context_alloc_jobname( int iens , const char * jobname_fmt , const subst_list_type * subst_list) {
+  char * jobname;
+  {
+    char * first_pass = util_alloc_sprintf( jobname_fmt, iens );
+
+    if (subst_list)
+      jobname = subst_list_alloc_filtered_string( subst_list , first_pass );         /* 2: Filter out various magic strings like <CASE> and <CWD>. */
+    else
+      jobname = util_alloc_string_copy( first_pass );
+
+    free( first_pass );
+  }
+  return jobname;
+}
+
+
 
 stringlist_type * ert_run_context_alloc_runpath_list(const bool_vector_type * iactive , const path_fmt_type * runpath_fmt , const subst_list_type * subst_list , int iter) {
   stringlist_type * runpath_list = stringlist_alloc_new();
@@ -95,6 +111,21 @@ stringlist_type * ert_run_context_alloc_runpath_list(const bool_vector_type * ia
   }
   return runpath_list;
 }
+
+
+static stringlist_type * ert_run_context_alloc_jobname_list(const bool_vector_type * iactive , const char * jobname_fmt, const subst_list_type * subst_list) {
+  stringlist_type * jobname_list = stringlist_alloc_new();
+  for (int iens = 0; iens < bool_vector_size( iactive ); iens++) {
+
+    if (bool_vector_iget( iactive , iens ))
+      stringlist_append_owned_ref( jobname_list , ert_run_context_alloc_jobname(iens , jobname_fmt , subst_list));
+    else
+      stringlist_append_ref( jobname_list , NULL );
+
+  }
+  return jobname_list;
+}
+
 
 
 char * ert_run_context_alloc_run_id( ) {
@@ -128,18 +159,26 @@ static ert_run_context_type * ert_run_context_alloc__(bool_vector_type * iactive
 ert_run_context_type * ert_run_context_alloc_ENSEMBLE_EXPERIMENT(enkf_fs_type * sim_fs,
                                                                  bool_vector_type * iactive ,
                                                                  const path_fmt_type * runpath_fmt ,
+								 const char * jobname_fmt,
                                                                  const subst_list_type * subst_list ,
                                                                  int iter) {
 
   ert_run_context_type * context = ert_run_context_alloc__( iactive , ENSEMBLE_EXPERIMENT , INIT_CONDITIONAL, sim_fs , NULL , iter);
   {
     stringlist_type * runpath_list = ert_run_context_alloc_runpath_list( iactive , runpath_fmt , subst_list , iter );
+    stringlist_type * jobname_list = ert_run_context_alloc_jobname_list( iactive , jobname_fmt , subst_list );
     for (int iens = 0; iens < bool_vector_size( iactive ); iens++) {
       if (bool_vector_iget( iactive , iens )) {
-        run_arg_type * arg = run_arg_alloc_ENSEMBLE_EXPERIMENT( context->run_id, sim_fs, iens , iter , stringlist_iget( runpath_list , iens));
+        run_arg_type * arg = run_arg_alloc_ENSEMBLE_EXPERIMENT( context->run_id,
+								sim_fs,
+								iens,
+								iter,
+								stringlist_iget( runpath_list , iens),
+								stringlist_iget( jobname_list, iens));
         vector_append_owned_ref( context->run_args , arg , run_arg_free__);
       }
     }
+    stringlist_free( jobname_list );
     stringlist_free( runpath_list );
   }
   return context;
@@ -171,18 +210,27 @@ ert_run_context_type * ert_run_context_alloc_INIT_ONLY(enkf_fs_type * sim_fs,
 ert_run_context_type * ert_run_context_alloc_SMOOTHER_RUN(enkf_fs_type * sim_fs , enkf_fs_type * target_update_fs ,
                                                           bool_vector_type * iactive ,
                                                           const path_fmt_type * runpath_fmt ,
-                                                          const subst_list_type * subst_list ,
+							  const char * jobname_fmt, 
+							  const subst_list_type * subst_list ,
                                                           int iter) {
 
   ert_run_context_type * context = ert_run_context_alloc__( iactive , SMOOTHER_UPDATE , INIT_CONDITIONAL, sim_fs , target_update_fs , iter);
   {
     stringlist_type * runpath_list = ert_run_context_alloc_runpath_list( iactive , runpath_fmt , subst_list , iter );
+    stringlist_type * jobname_list = ert_run_context_alloc_jobname_list( iactive , jobname_fmt , subst_list );
     for (int iens = 0; iens < bool_vector_size( iactive ); iens++) {
       if (bool_vector_iget( iactive , iens )) {
-        run_arg_type * arg = run_arg_alloc_SMOOTHER_RUN( context->run_id, sim_fs , target_update_fs , iens , iter , stringlist_iget( runpath_list , iens));
+        run_arg_type * arg = run_arg_alloc_SMOOTHER_RUN( context->run_id,
+							 sim_fs,
+							 target_update_fs,
+							 iens,
+							 iter,
+							 stringlist_iget( runpath_list , iens),
+							 stringlist_iget( jobname_list , iens));
         vector_append_owned_ref( context->run_args , arg , run_arg_free__);
       }
     }
+    stringlist_free( jobname_list );
     stringlist_free( runpath_list );
   }
   return context;
@@ -194,15 +242,16 @@ ert_run_context_type * ert_run_context_alloc(run_mode_type run_mode,
                                              enkf_fs_type * target_update_fs ,
                                              bool_vector_type * iactive ,
                                              path_fmt_type * runpath_fmt ,
+                                             const char * jobname_fmt, 
                                              subst_list_type * subst_list ,
                                              int iter) {
   switch (run_mode) {
 
   case(SMOOTHER_UPDATE):
-    return ert_run_context_alloc_SMOOTHER_RUN( sim_fs , target_update_fs, iactive, runpath_fmt , subst_list , iter );
+    return ert_run_context_alloc_SMOOTHER_RUN( sim_fs , target_update_fs, iactive, runpath_fmt , jobname_fmt, subst_list , iter );
 
   case(ENSEMBLE_EXPERIMENT):
-    return ert_run_context_alloc_ENSEMBLE_EXPERIMENT( sim_fs , iactive , runpath_fmt , subst_list , iter);
+    return ert_run_context_alloc_ENSEMBLE_EXPERIMENT( sim_fs , iactive , runpath_fmt , jobname_fmt, subst_list , iter);
 
   case(INIT_ONLY):
     return ert_run_context_alloc_INIT_ONLY( sim_fs, init_mode , iactive, runpath_fmt , subst_list, iter );
