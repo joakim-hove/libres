@@ -71,4 +71,4 @@ class EverestTest(ExtendedTestCase):
             ert.getEnkfSimulationRunner().createRunPath( run_context )
 
             job_queue = ert.get_queue_config().create_job_queue()
-            num = ert.getEnkfSimulationRunner().runEnsembleExperiment(job_queue, run_context)
+            #num = ert.getEnkfSimulationRunner().runEnsembleExperiment(job_queue, run_context)

@@ -793,6 +793,11 @@ void enkf_state_init_eclipse(const res_config_type * res_config,
       free( iens_str );
     }
 
+    if (run_arg_get_geo_id( run_arg ) > 0) {
+      char * geo_id_str = util_alloc_sprintf("%d" , run_arg_get_geo_id( run_arg ));
+      subst_list_append_copy( subst_list , "<GEO_ID>", geo_id_str, NULL);
+    }
+
     ert_templates_instansiate( res_config_get_templates( res_config ) , run_arg_get_runpath( run_arg ) , subst_list );
     enkf_state_ecl_write(ens_config, model_config , run_arg , run_arg_get_sim_fs( run_arg ));
 
@@ -821,7 +826,9 @@ void enkf_state_init_eclipse(const res_config_type * res_config,
                                      run_arg_get_runpath( run_arg ) ,
                                      model_config_get_data_root( model_config ) ,
                                      subst_list,
-                                     umask);
+                                     umask,
+                                     varlist);
+    env_varlist_free( varlist );
     subst_list_free( subst_list );
   }
 }

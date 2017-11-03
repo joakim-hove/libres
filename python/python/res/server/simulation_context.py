@@ -29,14 +29,14 @@ class SimulationContext(object):
         jobname_fmt = self._ert.getModelConfig().getJobnameFormat()
         self._run_context = ErtRunContext( EnkfRunType.ENSEMBLE_EXPERIMENT, sim_fs, None, mask, path_fmt, jobname_fmt, subst_list, itr)
 
-        
+
     def addSimulation(self, iens):
         if iens >= len(self._mask):
             raise UserWarning("Realization number out of range: %d >= %d" % (iens, len(self._mask)))
 
         if not self._mask[iens]:
             raise UserWarning("Realization number: '%d' is not active" % iens)
-        
+
         if iens in self._run_args:
             raise UserWarning("Realization number: '%d' already queued" % iens)
 
@@ -48,7 +48,7 @@ class SimulationContext(object):
 
     def isRunning(self):
         return self._queue_manager.isRunning()
-    
+
 
     def getNumRunning(self):
         return self._queue_manager.getNumRunning()

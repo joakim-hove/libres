@@ -68,6 +68,9 @@ UTIL_IS_INSTANCE_HEADER( run_arg );
   enkf_fs_type * run_arg_get_update_target_fs(const run_arg_type * run_arg);
   enkf_fs_type * run_arg_get_sim_fs(const run_arg_type * run_arg);
 
+  void run_arg_set_geo_id( run_arg_type * run_arg , int geo_id);
+  int run_arg_get_geo_id( const run_arg_type * run_arg);
+
 #ifdef __cplusplus
 }
 #endif

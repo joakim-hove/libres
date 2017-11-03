@@ -43,7 +43,7 @@ struct run_arg_struct {
   char                  * job_name;             /* Name of the job - will correspond to ECLBASE for eclipse jobs. */
   run_mode_type           run_mode;             /* What type of run this is */
   int                     queue_index;          /* The job will in general have a different index in the queue than the iens number. */
-
+  int                     geo_id;               /* This will be used by WPRO - and mapped to context key <GEO_ID>; set during submit. */
   enkf_fs_type          * sim_fs;
   enkf_fs_type          * update_target_fs;
 
@@ -87,6 +87,7 @@ static run_arg_type * run_arg_alloc(const char * run_id,
     run_arg->num_internal_submit = 0;
     run_arg->queue_index = INVALID_QUEUE_INDEX;
     run_arg->run_status = JOB_NOT_STARTED;
+    run_arg->geo_id = -1;    // -1 corresponds to not set
 
     if (step1 == 0)
       run_arg->load_start = 1;
@@ -233,7 +234,14 @@ void run_arg_set_run_status( run_arg_type * run_arg , run_status_type run_status
 }
 
 
+void run_arg_set_geo_id( run_arg_type * run_arg , int geo_id) {
+  run_arg->geo_id = geo_id;
+}
 
+
+int run_arg_get_geo_id( const run_arg_type * run_arg) {
+  return run_arg->geo_id;
+}
 
 
 enkf_fs_type * run_arg_get_sim_fs(const run_arg_type * run_arg) {
