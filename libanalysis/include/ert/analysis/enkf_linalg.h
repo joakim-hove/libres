@@ -2,7 +2,7 @@
 #define ERT_ENKF_LINALG_H
 
 #include <ert/util/matrix_lapack.h>
-#include <ert/util/matrix.h>
+#include <ert/res_util/matrix.h>
 #include <ert/util/double_vector.h>
 
 
