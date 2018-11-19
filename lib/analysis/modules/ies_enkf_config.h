@@ -39,8 +39,8 @@ typedef struct ies_enkf_config_struct ies_enkf_config_type;
   void ies_enkf_config_set_option_flags( ies_enkf_config_type * config , long flags);
   long ies_enkf_config_get_option_flags( const ies_enkf_config_type * config );
 
-  double ies_enkf_config_get_steplength( ies_enkf_config_type * config );
-  void   ies_enkf_config_set_steplength( ies_enkf_config_type * config , double steplength);
+  double ies_enkf_config_get_ies_steplength( ies_enkf_config_type * config );
+  void   ies_enkf_config_set_ies_steplength( ies_enkf_config_type * config , double ies_steplength);
 
   double ies_enkf_config_get_gauss_newton_conv( ies_enkf_config_type * config );
   void   ies_enkf_config_set_gauss_newton_conv( ies_enkf_config_type * config , double gauss_newton_conv);
@@ -48,6 +48,17 @@ typedef struct ies_enkf_config_struct ies_enkf_config_type;
   int    ies_enkf_config_get_max_gauss_newton_it( ies_enkf_config_type * config );
   void   ies_enkf_config_set_max_gauss_newton_it( ies_enkf_config_type * config , int max_gauss_newton_it);
 
+  int    ies_enkf_config_get_ies_inversion( ies_enkf_config_type * config ) ;
+  void   ies_enkf_config_set_ies_inversion( ies_enkf_config_type * config , int ies_inversion ) ;
+
+  bool   ies_enkf_config_get_ies_subspace( ies_enkf_config_type * config ) ;
+  void   ies_enkf_config_set_ies_subspace( ies_enkf_config_type * config , bool ies_subspace ) ;
+
+  bool   ies_enkf_config_get_ies_debug( ies_enkf_config_type * config ) ;
+  void   ies_enkf_config_set_ies_debug( ies_enkf_config_type * config , bool ies_debug ) ;
+
+  char * ies_enkf_config_get_ies_logfile( ies_enkf_config_type * config ) ;
+  void   ies_enkf_config_set_ies_logfile( ies_enkf_config_type * config , const char * ies_logfile ) ;
 
 
 #ifdef __cplusplus
