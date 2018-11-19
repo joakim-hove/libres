@@ -33,8 +33,15 @@
 #define DEFAULT_ENKF_TRUNCATION        0.98
 #define DEFAULT_ENKF_SUBSPACE_DIMENSION     INVALID_SUBSPACE_DIMENSION
 
-#define DEFAULT_STEPLENGTH             0.70
+#define DEFAULT_IES_STEPLENGTH         0.70
 #define DEFAULT_GAUSS_NEWTON_CONV      0.0001
+
+#define DEFAULT_IES_SUBSPACE           false
+#define DEFAULT_IES_INVERSION               1
+#define DEFAULT_IES_LOGFILE            "ies.log"
+#define DEFAULT_IES_DEBUG              false
+
+
 
 #define IES_ENKF_CONFIG_TYPE_ID 196402021
 
@@ -43,20 +50,28 @@ struct ies_enkf_config_struct {
   double    truncation;            // Controlled by config key: ENKF_TRUNCATION_KEY
   int       subspace_dimension;    // Controlled by config key: ENKF_SUBSPACE_DIMENSION_KEY (-1: use Truncation instead)
   long      option_flags;
-  double    steplength;            // Controlled by config key: DEFAULT_STEPLENGTH_KEY
+  double    ies_steplength;        // Controlled by config key: DEFAULT_IES_STEPLENGTH_KEY
   double    gauss_newton_conv;     // Controlled by config key: DEFAULT_GAUSS_NEWTON_CONV_KEY
+  bool      ies_subspace;          // Controlled by config key: DEFAULT_IES_SUBSPACE
+  int       ies_inversion;              // Controlled by config key: DEFAULT_IES_INVERSION
+  char    * ies_logfile;           // Controlled by config key: DEFAULT_IES_LOGFILE
+  bool      ies_debug;             // Controlled by config key: DEFAULT_IES_DEBUG
 };
 
 
 ies_enkf_config_type * ies_enkf_config_alloc() {
   ies_enkf_config_type * config = util_malloc( sizeof * config );
   UTIL_TYPE_ID_INIT( config , IES_ENKF_CONFIG_TYPE_ID );
-
+  config->ies_logfile = util_alloc_string_copy( "tmp.log" ); // for DEBUG of alloc vs realloc
   ies_enkf_config_set_truncation( config , DEFAULT_ENKF_TRUNCATION);
   ies_enkf_config_set_enkf_subspace_dimension( config , DEFAULT_ENKF_SUBSPACE_DIMENSION);
   ies_enkf_config_set_option_flags( config , ANALYSIS_NEED_ED + ANALYSIS_UPDATE_A + ANALYSIS_ITERABLE + ANALYSIS_SCALE_DATA);
-  ies_enkf_config_set_steplength( config , DEFAULT_STEPLENGTH );
+  ies_enkf_config_set_ies_steplength( config , DEFAULT_IES_STEPLENGTH );
   ies_enkf_config_set_gauss_newton_conv( config , DEFAULT_GAUSS_NEWTON_CONV );
+  ies_enkf_config_set_ies_subspace( config , DEFAULT_IES_SUBSPACE );
+  ies_enkf_config_set_ies_inversion( config , DEFAULT_IES_INVERSION );
+  ies_enkf_config_set_ies_logfile( config , DEFAULT_IES_LOGFILE );
+  ies_enkf_config_set_ies_debug( config , DEFAULT_IES_DEBUG );
 
   return config;
 }
@@ -73,7 +88,6 @@ void ies_enkf_config_set_truncation( ies_enkf_config_type * config , double trun
     config->subspace_dimension = INVALID_SUBSPACE_DIMENSION;
 }
 
-
 /*------------------------------------------------------------------------------------------------*/
 /* SUBSPACE_DIMENSION -> TRUNCATION */
 int ies_enkf_config_get_enkf_subspace_dimension( ies_enkf_config_type * config ) {
@@ -88,21 +102,22 @@ void ies_enkf_config_set_enkf_subspace_dimension( ies_enkf_config_type * config 
 
 /*------------------------------------------------------------------------------------------------*/
 /* OPTION_FLAGS */
-void ies_enkf_config_set_option_flags( ies_enkf_config_type * config , long flags) {
-  config->option_flags = flags;
-}
 
 long ies_enkf_config_get_option_flags( const ies_enkf_config_type * config ) {
   return config->option_flags;
 }
 
-/*------------------------------------------------------------------------------------------------*/
-/* STEPLENGTH */
-double ies_enkf_config_get_steplength( ies_enkf_config_type * config ) {
-   return config->steplength;
+void ies_enkf_config_set_option_flags( ies_enkf_config_type * config , long flags) {
+  config->option_flags = flags;
 }
-void ies_enkf_config_set_steplength( ies_enkf_config_type * config , double steplength) {
-   config->steplength = steplength;
+
+/*------------------------------------------------------------------------------------------------*/
+/* IES_STEPLENGTH */
+double ies_enkf_config_get_ies_steplength( ies_enkf_config_type * config ) {
+   return config->ies_steplength;
+}
+void ies_enkf_config_set_ies_steplength( ies_enkf_config_type * config , double ies_steplength) {
+   config->ies_steplength = ies_steplength;
 }
 
 /*------------------------------------------------------------------------------------------------*/
@@ -114,6 +129,43 @@ void ies_enkf_config_set_gauss_newton_conv( ies_enkf_config_type * config , doub
    config->gauss_newton_conv = gauss_newton_conv;
 }
 
+/*------------------------------------------------------------------------------------------------*/
+/* IES_INVERSION          */
+int ies_enkf_config_get_ies_inversion( ies_enkf_config_type * config ) {
+   return config->ies_inversion;
+}
+void ies_enkf_config_set_ies_inversion( ies_enkf_config_type * config , int ies_inversion ) {
+   config->ies_inversion = ies_inversion;
+}
+
+
+/*------------------------------------------------------------------------------------------------*/
+/* IES_SUBSPACE      */
+bool ies_enkf_config_get_ies_subspace( ies_enkf_config_type * config ) {
+   return config->ies_subspace;
+}
+void ies_enkf_config_set_ies_subspace( ies_enkf_config_type * config , bool ies_subspace ) {
+   config->ies_subspace = ies_subspace;
+}
+
+/*------------------------------------------------------------------------------------------------*/
+/* IES_DEBUG         */
+bool ies_enkf_config_get_ies_debug( ies_enkf_config_type * config ) {
+   return config->ies_debug;
+}
+void ies_enkf_config_set_ies_debug( ies_enkf_config_type * config , bool ies_debug ) {
+   config->ies_debug = ies_debug;
+}
+
+/*------------------------------------------------------------------------------------------------*/
+/* IES_LOGFILE       */
+char * ies_enkf_config_get_ies_logfile( ies_enkf_config_type * config ) {
+   return config->ies_logfile;
+}
+void ies_enkf_config_set_ies_logfile( ies_enkf_config_type * config , const char * ies_logfile ) {
+   config->ies_logfile = util_realloc_string_copy( config->ies_logfile , ies_logfile ); 
+//   config->ies_logfile = util_alloc_string_copy( ies_logfile ); 
+}
 
 /*------------------------------------------------------------------------------------------------*/
 /* FREE_CONFIG */
