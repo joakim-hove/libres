@@ -18,34 +18,35 @@ import stat
 import unittest
 import shutil
 import functools
+import inspect
 import yaml
 
 from ecl.summary import EclSum
 from ecl.util.test import TestAreaContext
 from tests import ResTest, statoil_test
 from res.fm.ecl import EclRun, simulate
+from res.fm.ecl import Ecl100Config
 
 
 class EclRunTest(ResTest):
     def setUp(self):
-        os.environ["ECL_SITE_CONFIG"] = os.path.join(self.SOURCE_ROOT, "python/res/fm/ecl/ecl_config.yml")
+        self.ecl_config_path = os.path.dirname( inspect.getsourcefile(Ecl100Config) )
 
 
     def init_config(self):
         conf = {"env" : {"F_UFMTENDIAN" : "big",
                          "LM_LICENSE_FILE" : "7321@eclipse-lic-no.statoil.no",
                          "ARCH" : "x86_64"},
-                "simulators" : {"flow"   : {"daily"  : {"scalar": {"executable" : "/project/res/x86_64_RH_6/bin/flowdaily"}}},
-                                "ecl100" : {"2014.2" : {"scalar": {"executable" : "/prog/ecl/grid/2014.2/bin/linux_x86_64/eclipse.exe"},
-                                                        "mpi"   : {"executable" : "/prog/ecl/grid/2014.2/bin/linux_x86_64/eclipse_ilmpi.exe",
-                                                                   "mpirun" : "/prog/ecl/grid/tools/linux_x86_64/intel/mpi/5.0.2.044/bin64/mpirun",
-                                                                   "env" : {"I_MPI_ROOT" : "/prog/ecl/grid/tools/linux_x86_64/intel/mpi/5.0.2.044/",
-                                                                            "P4_RSHCOMMAND" : "ssh",
-                                                                            "LD_LIBRARY_PATH" : "/prog/ecl/grid/tools/linux_x86_64/intel/mpi/5.0.2.044/lib64:$LD_LIBRARY_PATH",
-                                                                            "PATH" : "/prog/ecl/grid/tools/linux_x86_64/intel/mpi/5.0.2.044/bin64:$PATH"}}}}}}
+                "versions" : {"2014.2" : {"scalar": {"executable" : "/prog/ecl/grid/2014.2/bin/linux_x86_64/eclipse.exe"},
+                                          "mpi"   : {"executable" : "/prog/ecl/grid/2014.2/bin/linux_x86_64/eclipse_ilmpi.exe",
+                                                     "mpirun" : "/prog/ecl/grid/tools/linux_x86_64/intel/mpi/5.0.2.044/bin64/mpirun",
+                                                     "env" : {"I_MPI_ROOT" : "/prog/ecl/grid/tools/linux_x86_64/intel/mpi/5.0.2.044/",
+                                                              "P4_RSHCOMMAND" : "ssh",
+                                                              "LD_LIBRARY_PATH" : "/prog/ecl/grid/tools/linux_x86_64/intel/mpi/5.0.2.044/lib64:$LD_LIBRARY_PATH",
+                                                              "PATH" : "/prog/ecl/grid/tools/linux_x86_64/intel/mpi/5.0.2.044/bin64:$PATH"}}}}}
         with open("ecl_config.yml","w") as f:
             f.write( yaml.dump(conf) )
-        os.environ["ECL_SITE_CONFIG"] = "ecl_config.yml"
+        os.environ["ECL100_SITE_CONFIG"] = "ecl100_config.yml"
 
 
     def test_create(self):
@@ -53,14 +54,14 @@ class EclRunTest(ResTest):
 
         with TestAreaContext("ecl_run"):
             self.init_config()
-            conf = {"simulators" : {"ecl100" : {"2014.2" : {"scalar": {"executable" : "bin/scalar_exe"},
-                                                            "mpi" : {"executable" : "bin/mpi_exe",
-                                                                     "mpirun" : "bin/mpirun"}}}}}
-            with open("ecl_config.yml","w") as f:
+            conf = {"versions" : {"2014.2" : {"scalar": {"executable" : "bin/scalar_exe"},
+                                              "mpi" : {"executable" : "bin/mpi_exe",
+                                                       "mpirun" : "bin/mpirun"}}}}
+            with open("ecl100_config.yml","w") as f:
                 f.write( yaml.dump(conf) )
 
             os.mkdir("bin")
-            os.environ["ECL_SITE_CONFIG"] = "ecl_config.yml"
+            os.environ["ECL100_SITE_CONFIG"] = "ecl100_config.yml"
             for f in ["scalar_exe", "mpi_exe", "mpirun"]:
                 fname = os.path.join("bin", f)
                 with open( fname, "w") as fh:
@@ -68,58 +69,61 @@ class EclRunTest(ResTest):
 
                 os.chmod(fname, stat.S_IEXEC)
 
-            # Wrong arg count
-            with self.assertRaises(ValueError):
-                argv = []
-                ecl_run = EclRun(argv)
-
-            # Wrong arg count
-            with self.assertRaises(ValueError):
-                argv = [1,2,3,4,5]
-                ecl_run = EclRun(argv)
-
-
             with open("ECLIPSE.DATA" , "w") as f:
                 f.write("Mock eclipse data file")
 
-            #Unknown simulator in argv[0]
-            with self.assertRaises(ValueError):
-                argv = ["Simulator" , "2014.2" , "ECLIPSE.DATA"]
-                ecl_run = EclRun(argv)
-
-            ecl_run = EclRun(["run_ecl100" , "2014.2" , "ECLIPSE.DATA"])
+            ecl_config = Ecl100Config()
+            sim = ecl_config.sim("2014.2")
+            mpi_sim = ecl_config.mpi_sim("2014.2")
+            ecl_run = EclRun("ECLIPSE.DATA", sim)
             self.assertEqual( ecl_run.runPath() , os.getcwd())
 
             os.mkdir("path")
             with open("path/ECLIPSE.DATA" , "w") as f:
                 f.write("Mock eclipse data file")
 
-            ecl_run = EclRun(["run_ecl100" , "2014.2" , "path/ECLIPSE.DATA"])
+            ecl_run = EclRun("path/ECLIPSE.DATA", sim)
             self.assertEqual( ecl_run.runPath() , os.path.join(os.getcwd() , "path"))
             self.assertEqual( ecl_run.baseName() , "ECLIPSE")
-
-
-            argv = ["run_ecl100" , "2014.2" , "ECLIPSE.DATA"]
-            ecl_run = EclRun(argv)
             self.assertEqual( 1 , ecl_run.numCpu())
 
             # invalid number of CPU
             with self.assertRaises(ValueError):
-                argv = ["run_ecl100" , "2014.2" , "ECLIPSE.DATA" , "xx"]
-                ecl_run = EclRun(argv)
+                ecl_run = EclRun("path/ECLIPSE.DATA", sim, num_cpu = "xxx")
 
-            argv = ["run_ecl100" , "2014.2" , "ECLIPSE.DATA" , "10"]
-            ecl_run = EclRun(argv)
+            # invalid number of CPU
+            with self.assertRaises(Exception):
+                ecl_run = EclRun("path/ECLIPSE.DATA", sim, num_cpu = 10)
+
+            ecl_run = EclRun("path/ECLIPSE.DATA", mpi_sim, num_cpu = "10")
             self.assertEqual( 10 , ecl_run.numCpu())
-
-            argv = ["run_ecl100" , "MISSING_VERSION" , "ECLIPSE.DATA" , "10"]
-            with self.assertRaises(KeyError):
-                ecl_run = EclRun(argv)
 
             #Missing datafile
             with self.assertRaises(IOError):
-                argv = ["run_ecl100" , "2014.2" , "ECLIPSE_DOES_NOT_EXIST.DATA"]
-                ecl_run = EclRun(argv)
+                ecl_run = EclRun("DOES/NOT/EXIST", mpi_sim, num_cpu = "10")
+
+
+    def test_flow(self):
+        flow_config = FlowConfig()
+        try:
+            sim = flow_config.sim( )
+        except:
+            # We do not have a usable flow on the system - fair enough.
+            return
+
+        with TestAreaContext("ecl_run") as ta:
+            self.init_config()
+            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
+            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.ERROR.DATA"))
+            os.makedirs("ecl_run")
+            shutil.move("SPE1.DATA" , "ecl_run")
+            argv = ["run_flow" , "daily" , "ecl_run/SPE1.DATA"]
+            flow_run = EclRun(argv)
+            flow_run.runEclipse( )
+
+            flow_run = EclRun(["run_flow" , "daily" , "SPE1.ERROR.DATA"])
+            with self.assertRaises(Exception):
+                flow_run.runEclipse( )
 
 
     @statoil_test()
@@ -129,8 +133,9 @@ class EclRunTest(ResTest):
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
             os.makedirs("ecl_run")
             shutil.move("SPE1.DATA" , "ecl_run")
-            argv = ["run_ecl100" , "2014.2" , "ecl_run/SPE1.DATA"]
-            ecl_run = EclRun(argv)
+            ecl_config = Ecl100Config()
+            sim = ecl_config.sim("2014.2")
+            ecl_run = EclRun("ecl_run/SPE1.DATA", sim)
             ecl_run.runEclipse( )
 
             self.assertTrue( os.path.isfile( os.path.join( ecl_run.runPath() , "%s.stderr" % ecl_run.baseName())))
@@ -163,22 +168,6 @@ class EclRunTest(ResTest):
 
 
 
-
-    @statoil_test()
-    def test_flow(self):
-        with TestAreaContext("ecl_run") as ta:
-            self.init_config()
-            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
-            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.ERROR.DATA"))
-            os.makedirs("ecl_run")
-            shutil.move("SPE1.DATA" , "ecl_run")
-            argv = ["run_flow" , "daily" , "ecl_run/SPE1.DATA"]
-            flow_run = EclRun(argv)
-            flow_run.runEclipse( )
-
-            flow_run = EclRun(["run_flow" , "daily" , "SPE1.ERROR.DATA"])
-            with self.assertRaises(Exception):
-                flow_run.runEclipse( )
 
 
     @statoil_test()
