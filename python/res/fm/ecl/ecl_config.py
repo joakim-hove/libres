@@ -59,10 +59,8 @@ class EclConfig(object):
     example file.
 
     """
-    DEFAULT_CONFIG_FILE = os.path.join(os.path.dirname(__file__), "ecl_config.yml")
 
-    def __init__(self):
-        config_file = os.getenv("ECL_SITE_CONFIG", default = self.DEFAULT_CONFIG_FILE)
+    def __init__(self, config_file):
         with open(config_file) as f:
             try:
                 config = yaml.load(f)
@@ -124,3 +122,13 @@ class EclConfig(object):
                     if sim:
                         simulators.append(sim)
         return simulators
+
+
+
+class Ecl100Config(EclConfig):
+
+    DEFAULT_CONFIG_FILE = os.path.join(os.path.dirname(__file__), "ecl100_config.yml")
+
+    def __init__(self):
+        config_file = os.getenv("ECL100_SITE_CONFIG", default = self.DEFAULT_CONFIG_FILE)
+        super(Ecl100Config, self).__init__(config_file)

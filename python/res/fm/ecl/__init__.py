@@ -1,4 +1,4 @@
-from .ecl_config import EclConfig
+from .ecl_config import Ecl100Config
 from .ecl_run import EclRun
 
 

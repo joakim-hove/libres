@@ -21,29 +21,29 @@ import yaml
 from ecl.util.test import TestAreaContext
 from tests import ResTest
 
-from res.fm.ecl import EclConfig
+from res.fm.ecl import Ecl100Config
 
 
 class EclConfigTest(ResTest):
 
     def setUp(self):
-        self.ecl_config_path = os.path.dirname( inspect.getsourcefile(EclConfig) )
+        self.ecl_config_path = os.path.dirname( inspect.getsourcefile(Ecl100Config) )
 
     def test_load(self):
-        os.environ["ECL_SITE_CONFIG"] = "file/does/not/exist"
+        os.environ["ECL100_SITE_CONFIG"] = "file/does/not/exist"
         with self.assertRaises(IOError):
-            conf = EclConfig()
+            conf = Ecl100Config()
 
-        os.environ["ECL_SITE_CONFIG"] = os.path.join(self.ecl_config_path, "ecl_config.yml")
-        conf = EclConfig()
+        os.environ["ECL100_SITE_CONFIG"] = os.path.join(self.ecl_config_path, "ecl100_config.yml")
+        conf = Ecl100Config()
 
         with TestAreaContext("yaml_invalid"):
             with open("file.yml","w") as f:
                 f.write("this:\n -should\n-be\ninvalid:yaml?")
 
-            os.environ["ECL_SITE_CONFIG"] = "file.yml"
+            os.environ["ECL100_SITE_CONFIG"] = "file.yml"
             with self.assertRaises(ValueError):
-                conf = EclConfig()
+                conf = Ecl100Config()
 
             scalar_path = "scalar"
             scalar_exe = "bin/scalar_exe"
@@ -78,7 +78,7 @@ class EclConfigTest(ResTest):
             with open("file.yml", "w") as f:
                 f.write( yaml.dump(d) )
 
-            conf = EclConfig()
+            conf = Ecl100Config()
             # Fails because there is no simulator ecl99
             with self.assertRaises(KeyError):
                 sim = conf.sim("ecl99", "2015")
