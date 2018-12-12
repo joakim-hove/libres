@@ -26,8 +26,7 @@ def _replace_env(env):
 class Simulator(object):
     """Small 'struct' with the config information for one simulator.
     """
-    def __init__(self, name, version, executable, env, mpirun = None):
-        self.name = name
+    def __init__(self, version, executable, env, mpirun = None):
         self.version = version
         if not os.access( executable , os.X_OK ):
             raise OSError("The executable: '{}' can not be executed by user".format(executable))
@@ -70,25 +69,25 @@ class EclConfig(object):
         self._config = config
 
 
-    def _get_env(self, sim, version, exe_type):
+    def _get_env(self, version, exe_type):
         env = {}
         env.update( self._config.get("env", {} ))
 
-        mpi_sim = self._config["simulators"][sim][version][exe_type]
+        mpi_sim = self._config["versions"][version][exe_type]
         env.update( mpi_sim.get("env", {}))
         return _replace_env(env)
 
 
-    def _get_sim(self, sim, version, exe_type):
-        d = self._config["simulators"][sim][version][exe_type]
+    def _get_sim(self, version, exe_type):
+        d = self._config["versions"][version][exe_type]
         if exe_type == "mpi":
             mpirun = d["mpirun"]
         else:
             mpirun = None
-        return Simulator(sim, version, d["executable"], self._get_env(sim, version, exe_type), mpirun = mpirun)
+        return Simulator(version, d["executable"], self._get_env(version, exe_type), mpirun = mpirun)
 
 
-    def sim(self, sim, version):
+    def sim(self, version):
         """Will return a small struct describing the simulator.
 
         The struct has attributes 'executable' and 'env'. Observe that the
@@ -96,31 +95,28 @@ class EclConfig(object):
         so if the executable key in the config file points to non-existing file
         you will not get the error before this point.
         """
-        return self._get_sim(sim, version, "scalar")
+        return self._get_sim(version, "scalar")
 
-    def mpi_sim(self, sim, version):
+    def mpi_sim(self, version):
         """MPI version of method sim()."""
-        return self._get_sim(sim, version, "mpi")
+        return self._get_sim(version, "mpi")
 
 
     def simulators(self, strict = True):
         simulators = []
-        for name,versions in self._config["simulators"].items():
-            for version,exe_types in versions.items():
-                for exe_type in exe_types.keys():
-                    if strict:
-                        sim = self._get_sim(name, version, exe_type)
-                    else:
-                        try:
-                            sim = self._get_sim(name, version, exe_type)
-                        except Exception:
-                            sys.stderr.write("Failed to create simulator object for:{name} version:{version} {exe_type}\n".format(name=name,
-                                                                                                                                  version=version,
-                                                                                                                                  exe_type=exe_type))
-                            sim = None
+        for version in self._config["versions"].keys():
+            for exe_type in self._config["versions"][version].keys():
+                if strict:
+                    sim = self._get_sim(version, exe_type)
+                else:
+                    try:
+                        sim = self._get_sim(version, exe_type)
+                    except Exception:
+                        sys.stderr.write("Failed to create simulator object for: version:{version} {exe_type}\n".format(version=version, exe_type=exe_type))
+                        sim = None
 
-                    if sim:
-                        simulators.append(sim)
+                if sim:
+                    simulators.append(sim)
         return simulators
 
 

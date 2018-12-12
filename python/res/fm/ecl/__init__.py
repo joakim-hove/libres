@@ -7,5 +7,6 @@ def simulate(simulator, version, data_file, num_cpu = 1, check = True):
     if not check:
         run_cmd += "_nocheck"
 
+    # The EclRun class should take a simulator instance as argument
     ecl_run = EclRun( [run_cmd, version, data_file, num_cpu])
     ecl_run.runEclipse( )

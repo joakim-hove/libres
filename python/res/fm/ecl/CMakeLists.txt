@@ -11,7 +11,7 @@ set(PYTHON_SOURCES
 set(_ecl100_config_file "${PROJECT_BINARY_DIR}/${PYTHON_INSTALL_PREFIX}/res/fm/ecl/ecl100_config.yml")
 find_package(Flow)
 if (Flow_FOUND)
-  find_package(MPI_ecl_config)
+  find_package(MPI)
   if (MPIEXEC)
     configure_file( ecl100_config_mpi.yml.in ${_ecl100_config_file})
   else()

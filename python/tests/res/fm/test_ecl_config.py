@@ -62,46 +62,49 @@ class EclConfigTest(ResTest):
             os.environ["ENV1"] = "A"
             os.environ["ENV2"] = "C"
             d = {"env" : {"LICENSE_SERVER" : "license@company.com"},
-                 "simulators": {"ecl100" : {"2015" : {"scalar": {"executable" : scalar_exe},
-                                                      "mpi"   : {"executable" : mpi_exe,
-                                                                 "mpirun"     : mpi_run,
-                                                                 "env" : {"I_MPI_ROOT" : "$ENV1:B:$ENV2",
-                                                                          "TEST_VAR" : "$ENV1.B.$ENV2 $UNKNOWN_VAR",
-                                                                          "P4_RSHCOMMAND" : "",
-                                                                          "LD_LIBRARY_PATH" : "{}:$LD_LIBRARY_PATH".format(intel_path),
-                                                                          "PATH" : "{}/bin64:$PATH".format(intel_path)}}}}
-                                ,
-                                "flow" : {"2018.04" : {"scalar" : {"executable" : "/does/not/exist"},
-                                                       "mpi" : {"executable" : mpi_exe,
-                                                                "mpirun"  : "/does/not/exist"}}}}}
+                 "versions": {"2015" : {"scalar": {"executable" : scalar_exe},
+                                        "mpi"   : {"executable" : mpi_exe,
+                                                   "mpirun"     : mpi_run,
+                                                   "env" : {"I_MPI_ROOT" : "$ENV1:B:$ENV2",
+                                                            "TEST_VAR" : "$ENV1.B.$ENV2 $UNKNOWN_VAR",
+                                                            "P4_RSHCOMMAND" : "",
+                                                            "LD_LIBRARY_PATH" : "{}:$LD_LIBRARY_PATH".format(intel_path),
+                                                            "PATH" : "{}/bin64:$PATH".format(intel_path)}}},
+                              "2016" : {"scalar": {"executable" : "/does/not/exist"},
+                                        "mpi" : {"executable" : "/does/not/exist",
+                                                 "mpirun" : mpi_run}},
+                              "2017" : {"mpi" : {"executable" : mpi_exe,
+                                                 "mpirun" : "/does/not/exist"}}}}
+
+
 
             with open("file.yml", "w") as f:
                 f.write( yaml.dump(d) )
 
             conf = Ecl100Config()
-            # Fails because there is no simulator ecl99
+            # Fails because there is no version 2020
             with self.assertRaises(KeyError):
-                sim = conf.sim("ecl99", "2015")
+                sim = conf.sim("2020")
 
-            # Fails because there is no version 2020 for ecl100
+            # Fails because the 2016 version points to a not existing executable
+            with self.assertRaises(OSError):
+                sim = conf.sim("2016")
+
+            # Fails because the 2016 mpi version points to a non existing mpi executable
+            with self.assertRaises(OSError):
+                sim = conf.mpi_sim("2016")
+
+            # Fails because the 2017 mpi version mpirun points to a non existing mpi executable
+            with self.assertRaises(OSError):
+                sim = conf.mpi_sim("2017")
+
+            # Fails because the 2017 scalar version is not registered
             with self.assertRaises(KeyError):
-                sim = conf.sim("ecl100", "2020")
+                sim = conf.sim("2017")
 
-            # Fails because the 2018.04 version of flow points to a not existing executable
-            with self.assertRaises(OSError):
-                sim = conf.sim("flow", "2018.04")
+            sim = conf.sim("2015")
+            mpi_sim = conf.mpi_sim("2015")
 
-            # Fails because the 2018.04 mpi version points to a non existing mpirun binary
-            with self.assertRaises(OSError):
-                sim = conf.mpi_sim("flow", "2018.04")
-
-            with self.assertRaises(Exception):
-                conf.sim("flowIx", "2018.04")
-
-            with self.assertRaises(Exception):
-                conf.mpi_sim("flow", "2018.04")
-
-            mpi_sim = conf.mpi_sim("ecl100", "2015")
             # Check that global environment has been propagated down.
             self.assertIn("LICENSE_SERVER", mpi_sim.env)
 
@@ -110,7 +113,7 @@ class EclConfigTest(ResTest):
             self.assertEqual(mpi_sim.env["TEST_VAR"], "A.B.C $UNKNOWN_VAR")
             self.assertEqual(len(mpi_sim.env), 1 + 5)
 
-            sim = conf.sim("ecl100", "2015")
+            sim = conf.sim("2015")
             self.assertEqual(sim.executable, scalar_exe)
             self.assertIsNone(sim.mpirun)
 
