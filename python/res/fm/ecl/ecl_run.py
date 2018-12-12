@@ -183,6 +183,7 @@ class EclRun(object):
 
     def execSerialEclipse(self):
         os.execv( self.sim.executable , [ self.sim.executable , self.base_name ])
+        irint("cwd: {}  calling {}  {}".format(os.getcwd(), self.sim.executable, self.base_name))
 
 
     def execParallellEclipse(self):
@@ -284,12 +285,12 @@ class EclRun(object):
     def readECLEND(self):
         error_regexp = re.compile("^\s*Errors\s+(\d+)\s*$")
         bug_regexp = re.compile("^\s*Bugs\s+(\d+)\s*$")
-        if self.sim.name == "flow":
-            eclend_file = os.path.join( self.run_path, "{}.PRT".format(self.base_name))
-        else:
-            eclend_file = os.path.join( self.run_path , "{}.ECLEND".format(self.base_name)) 
 
-        with open(eclend_file , "r") as fileH:
+        report_file = os.path.join( self.run_path , "{}.ECLEND".format(self.base_name))
+        if not os.path.isfile(report_file):
+            report_file = os.path.join( self.run_path, "{}.PRT".format(self.base_name))
+
+        with open(report_file , "r") as fileH:
             for line in fileH.readlines():
                 error_match = re.match(error_regexp , line)
                 if error_match:

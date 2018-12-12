@@ -24,8 +24,7 @@ import yaml
 from ecl.summary import EclSum
 from ecl.util.test import TestAreaContext
 from tests import ResTest, statoil_test
-from res.fm.ecl import EclRun, simulate
-from res.fm.ecl import Ecl100Config
+from res.fm.ecl import *
 
 
 class EclRunTest(ResTest):
@@ -103,10 +102,12 @@ class EclRunTest(ResTest):
                 ecl_run = EclRun("DOES/NOT/EXIST", mpi_sim, num_cpu = "10")
 
 
+
     def test_flow(self):
-        flow_config = FlowConfig()
+        flow_config = FlowConfig( )
+        sim = flow_config.sim("2018.10")
         try:
-            sim = flow_config.sim( )
+            sim = flow_config.sim("2018.10")
         except:
             # We do not have a usable flow on the system - fair enough.
             return
@@ -114,16 +115,20 @@ class EclRunTest(ResTest):
         with TestAreaContext("ecl_run") as ta:
             self.init_config()
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
-            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.ERROR.DATA"))
+            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
             os.makedirs("ecl_run")
-            shutil.move("SPE1.DATA" , "ecl_run")
-            argv = ["run_flow" , "daily" , "ecl_run/SPE1.DATA"]
-            flow_run = EclRun(argv)
+            shutil.move("SPE1.DATA", "ecl_run")
+            shutil.move("SPE1_ERROR.DATA" , "ecl_run")
+            flow_run = EclRun("ecl_run/SPE1.DATA", sim)
             flow_run.runEclipse( )
 
-            flow_run = EclRun(["run_flow" , "daily" , "SPE1.ERROR.DATA"])
+            run_flow("ecl_run/SPE1.DATA", "2018.10")
+            simulate("flow", "2018.10", "ecl_run/SPE1.DATA")
+
+            flow_run = EclRun("ecl_run/SPE1_ERROR.DATA", sim)
             with self.assertRaises(Exception):
-                flow_run.runEclipse( )
+               flow_run.runEclipse( )
+
 
 
     @statoil_test()
@@ -160,7 +165,7 @@ class EclRunTest(ResTest):
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
             os.makedirs("ecl_run")
             shutil.move("SPE1.DATA" , "ecl_run")
-            simulate("ecl100", "2014.2", "ecl_run/SPE1.DATA")
+            run_ecl100("ecl_run/SPE1.DATA", "2014.2")
 
             self.assertTrue( os.path.isfile("ecl_run/SPE1.DATA"))
             self.assertTrue( os.path.isfile("ecl_run/SPE1.DATA"))
@@ -174,9 +179,9 @@ class EclRunTest(ResTest):
     def test_failed_run(self):
         with TestAreaContext("ecl_run") as ta:
             self.init_config()
-            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.ERROR.DATA"))
-            argv = ["run_ecl100" , "2014.2" , "SPE1.ERROR"]
-            ecl_run = EclRun(argv)
+            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
+            argv = ["run_ecl100" , "2014.2" , "SPE1_ERROR"]
+            ecl_run = EclRun(
             with self.assertRaises(Exception):
                 ecl_run.runEclipse( )
 
@@ -190,8 +195,8 @@ class EclRunTest(ResTest):
     def test_failed_run_OK(self):
         with TestAreaContext("ecl_run") as ta:
             self.init_config()
-            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.ERROR.DATA"))
-            argv = ["run_ecl100_nocheck" , "2014.2" , "SPE1.ERROR"]
+            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
+            argv = ["run_ecl100_nocheck" , "2014.2" , "SPE1_ERROR"]
             ecl_run = EclRun(argv)
             ecl_run.runEclipse( )
 
@@ -227,7 +232,7 @@ class EclRunTest(ResTest):
     def test_summary_block(self):
         with TestAreaContext("ecl_run") as ta:
             self.init_config()
-            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.ERROR.DATA"))
+            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
             argv = ["run_ecl100" , "2014.2" , "SPE1"]
             ecl_run = EclRun(argv)
@@ -271,7 +276,7 @@ class EclRunTest(ResTest):
     def test_error_parse(self):
         with TestAreaContext("ecl_run") as ta:
             self.init_config()
-            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.ERROR.DATA"))
+            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
 
             argv = ["run_ecl100" , "2014.2" , "SPE1.DATA"]

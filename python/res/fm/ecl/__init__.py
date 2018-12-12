@@ -1,20 +1,34 @@
-from .ecl_config import Ecl100Config
+from .ecl_config import Ecl100Config, FlowConfig
 from .ecl_run import EclRun
 
 
 def simulate(simulator, version, data_file, num_cpu = 1, check = True):
-    run_cmd = "run_{}".format(simulator)
-    if not check:
-        run_cmd += "_nocheck"
+    if simulator == "ecl100":
+        return run_ecl100(data_file, version=version, num_cpu=num_cpu, check=check)
+    elif simulator == "flow":
+        return run_flow(data_file, version=version, num_cpu=num_cpu, check=check)
+    elif simulator == "ecl300":
+        return run_ecl300(data_file, version=version, num_cpu=num_cpu, check=check)
+    else:
+        raise Exception("No such simulator: {}".format(simulator))
 
-    # The EclRun class should take a simulator instance as argument
-    ecl_run = EclRun( [run_cmd, version, data_file, num_cpu])
-    ecl_run.runEclipse( )
 
+def run_flow(data_file, version = None, num_cpu = 1, check=True):
+    config = FlowConfig()
+    sim = config.sim(version)
+    ecl_run = EclRun(data_file, sim, num_cpu = num_cpu, check_status=check)
+    ecl_run.runEclipse()
 
 
 def run_ecl100(data_file, version = None, num_cpu = 1, check=True):
     config = Ecl100Config()
     sim = config.sim(version)
-    ecl_run = EclRun(data_file, sim, num_cpu = num_cpu, check=check)
+    ecl_run = EclRun(data_file, sim, num_cpu = num_cpu, check_status=check)
+    ecl_run.runEclipse()
+
+
+def run_ecl300(data_file, version = None, num_cpu = 1, check=True):
+    config = Ecl300Config()
+    sim = config.sim(version)
+    ecl_run = EclRun(data_file, sim, num_cpu = num_cpu, check_status=check)
     ecl_run.runEclipse()

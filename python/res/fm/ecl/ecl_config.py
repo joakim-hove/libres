@@ -34,6 +34,7 @@ class Simulator(object):
         self.executable = executable
         self.env = env
         self.mpirun = mpirun
+        self.name = "simulator"
 
         if not mpirun is None:
             if not os.access(mpirun, os.X_OK):
@@ -128,3 +129,13 @@ class Ecl100Config(EclConfig):
     def __init__(self):
         config_file = os.getenv("ECL100_SITE_CONFIG", default = self.DEFAULT_CONFIG_FILE)
         super(Ecl100Config, self).__init__(config_file)
+
+
+
+class FlowConfig(EclConfig):
+
+    DEFAULT_CONFIG_FILE = os.path.join(os.path.dirname(__file__), "flow_config.yml")
+
+    def __init__(self):
+        config_file = os.getenv("FLOW_SITE_CONFIG", default = self.DEFAULT_CONFIG_FILE)
+        super(FlowConfig, self).__init__(config_file)

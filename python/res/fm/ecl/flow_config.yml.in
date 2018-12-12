@@ -1,0 +1,6 @@
+# See the ecl_config.yml for more documentation of this file.
+
+versions:
+  '@FLOW_VERSION@':
+    scalar:
+      executable: @FLOW_EXECUTABLE@
