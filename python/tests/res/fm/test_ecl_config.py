@@ -123,6 +123,43 @@ class EclConfigTest(ResTest):
             simulators = conf.simulators(strict = False)
             self.assertEqual(len(simulators), 2)
 
+    def test_default(self):
+        with TestAreaContext("default"):
+            os.mkdir("bin")
+            scalar_exe = "bin/scalar_exe"
+            with open( scalar_exe, "w") as fh:
+                fh.write("This is an exectable ...")
+            os.chmod(scalar_exe, stat.S_IEXEC)
+
+            d0 = {"versions": {"2015" : {"scalar": {"executable" : scalar_exe}},
+                               "2016" : {"scalar": {"executable" : scalar_exe}}}}
+
+            d1 = {"default_version": "2015",
+                  "versions": {"2015" : {"scalar": {"executable" : scalar_exe}},
+                               "2016" : {"scalar": {"executable" : scalar_exe}}}}
+
+
+            os.environ["ECL100_SITE_CONFIG"] = os.path.join("file.yml")
+            with open("file.yml", "w") as f:
+                f.write( yaml.dump(d1) )
+
+            conf = Ecl100Config()
+            sim = conf.sim()
+            self.assertEqual(sim.version, "2015")
+
+            sim = conf.sim("default")
+            self.assertEqual(sim.version, "2015")
+
+            with open("file.yml", "w") as f:
+                f.write( yaml.dump(d0) )
+
+            conf = Ecl100Config()
+            with self.assertRaises(Exception):
+                sim = conf.sim()
+
+            with self.assertRaises(Exception):
+                sim = conf.sim("default")
+
 
 
 if __name__ == "__main__":

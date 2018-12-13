@@ -180,8 +180,9 @@ class EclRunTest(ResTest):
         with TestAreaContext("ecl_run") as ta:
             self.init_config()
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
-            argv = ["run_ecl100" , "2014.2" , "SPE1_ERROR"]
-            ecl_run = EclRun(
+            ecl_config = Ecl100Config()
+            sim = ecl_config.sim("2014.2")
+            ecl_run = EclRun("SPE1.ERROR", sim)
             with self.assertRaises(Exception):
                 ecl_run.runEclipse( )
 

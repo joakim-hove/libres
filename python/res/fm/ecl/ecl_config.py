@@ -68,18 +68,41 @@ class EclConfig(object):
                 raise ValueError("Failed parse: {} as yaml".format(config_file))
 
         self._config = config
+        self._config_file = os.path.abspath(config_file)
+        self.default_version = None
+
+        if "default_version" in self._config:
+            self.default_version = self._config["default_version"]
+
+
+
+    def _get_version(self, version_arg):
+        if version_arg is None:
+            version = self.default_version
+        elif version_arg == "default":
+            version = self.default_version
+        else:
+            version = version_arg
+
+        if version is None:
+            raise Exception("The default version has not not been set in the config file:{}".format(self.config_file))
+
+        return version
+
 
 
     def _get_env(self, version, exe_type):
         env = {}
         env.update( self._config.get("env", {} ))
 
+        version = self._get_version(version)
         mpi_sim = self._config["versions"][version][exe_type]
         env.update( mpi_sim.get("env", {}))
         return _replace_env(env)
 
 
     def _get_sim(self, version, exe_type):
+        version = self._get_version(version)
         d = self._config["versions"][version][exe_type]
         if exe_type == "mpi":
             mpirun = d["mpirun"]
@@ -88,7 +111,7 @@ class EclConfig(object):
         return Simulator(version, d["executable"], self._get_env(version, exe_type), mpirun = mpirun)
 
 
-    def sim(self, version):
+    def sim(self, version = None):
         """Will return a small struct describing the simulator.
 
         The struct has attributes 'executable' and 'env'. Observe that the
@@ -98,7 +121,7 @@ class EclConfig(object):
         """
         return self._get_sim(version, "scalar")
 
-    def mpi_sim(self, version):
+    def mpi_sim(self, version = None):
         """MPI version of method sim()."""
         return self._get_sim(version, "mpi")
 
