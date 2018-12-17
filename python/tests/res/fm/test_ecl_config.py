@@ -146,6 +146,10 @@ class EclConfigTest(ResTest):
             conf = Ecl100Config()
             sim = conf.sim()
             self.assertEqual(sim.version, "2015")
+            self.assertIn("2015", conf)
+            self.assertNotIn("xxxx", conf)
+            self.assertIn("default", conf)
+            self.assertIn(None, conf)
 
             sim = conf.sim("default")
             self.assertEqual(sim.version, "2015")
@@ -154,6 +158,7 @@ class EclConfigTest(ResTest):
                 f.write( yaml.dump(d0) )
 
             conf = Ecl100Config()
+            self.assertNotIn("default", conf)
             with self.assertRaises(Exception):
                 sim = conf.sim()
 

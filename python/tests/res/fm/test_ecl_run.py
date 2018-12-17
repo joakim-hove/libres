@@ -27,6 +27,14 @@ from tests import ResTest, statoil_test
 from res.fm.ecl import *
 
 
+
+flow_config = FlowConfig( )
+try:
+    sim = flow_config.sim()
+    have_flow = True
+except:
+    have_flow = False
+
 class EclRunTest(ResTest):
     def setUp(self):
         self.ecl_config_path = os.path.dirname( inspect.getsourcefile(Ecl100Config) )
@@ -103,22 +111,16 @@ class EclRunTest(ResTest):
 
 
 
+    @unittest.skipUnless(have_flow, "Requires flow")
     def test_flow(self):
-        flow_config = FlowConfig( )
-        sim = flow_config.sim("2018.10")
-        try:
-            sim = flow_config.sim("2018.10")
-        except:
-            # We do not have a usable flow on the system - fair enough.
-            return
-
         with TestAreaContext("ecl_run") as ta:
-            self.init_config()
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
             os.makedirs("ecl_run")
             shutil.move("SPE1.DATA", "ecl_run")
             shutil.move("SPE1_ERROR.DATA" , "ecl_run")
+            flow_config = FlowConfig()
+            sim = flow_config.sim()
             flow_run = EclRun("ecl_run/SPE1.DATA", sim)
             flow_run.runEclipse( )
 

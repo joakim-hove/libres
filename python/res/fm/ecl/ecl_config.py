@@ -75,6 +75,22 @@ class EclConfig(object):
             self.default_version = self._config["default_version"]
 
 
+    def __contains__(self, version):
+        if version in self._config["versions"]:
+            return True
+
+        if self.default_version is None:
+            return False
+
+        if version == "default":
+            return True
+
+        if version is None:
+            return True
+
+        return False
+
+
 
     def _get_version(self, version_arg):
         if version_arg is None:
