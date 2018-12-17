@@ -2,6 +2,7 @@ set(PYTHON_SOURCES
     __init__.py
     ecl_config.py
     ecl_run.py
+    script.py
 )
 
 # We look for binary 'flow' using normal cmake operations, if we indeed find

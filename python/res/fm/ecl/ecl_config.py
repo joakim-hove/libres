@@ -85,7 +85,7 @@ class EclConfig(object):
             version = version_arg
 
         if version is None:
-            raise Exception("The default version has not not been set in the config file:{}".format(self.config_file))
+            raise Exception("The default version has not not been set in the config file:{}".format(self._config_file))
 
         return version
 

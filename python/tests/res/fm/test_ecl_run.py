@@ -122,12 +122,17 @@ class EclRunTest(ResTest):
             flow_run = EclRun("ecl_run/SPE1.DATA", sim)
             flow_run.runEclipse( )
 
-            run_flow("ecl_run/SPE1.DATA", "2018.10")
-            simulate("flow", "2018.10", "ecl_run/SPE1.DATA")
+            run(flow_config, ["ecl_run/SPE1.DATA"])
 
             flow_run = EclRun("ecl_run/SPE1_ERROR.DATA", sim)
             with self.assertRaises(Exception):
                flow_run.runEclipse( )
+
+            run(flow_config, ["ecl_run/SPE1_ERROR.DATA", "--ignore-errors"])
+
+            # Invalid version
+            with self.assertRaises(Exception):
+                run(flow_config, ["ecl_run/SPE1.DATA", "--version=no/such/version"])
 
 
 
@@ -138,7 +143,7 @@ class EclRunTest(ResTest):
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
             os.makedirs("ecl_run")
             shutil.move("SPE1.DATA" , "ecl_run")
-            ecl_config = Ecl100Config()
+            ecl_config = Ecl100Config( )
             sim = ecl_config.sim("2014.2")
             ecl_run = EclRun("ecl_run/SPE1.DATA", sim)
             ecl_run.runEclipse( )
@@ -165,7 +170,8 @@ class EclRunTest(ResTest):
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
             os.makedirs("ecl_run")
             shutil.move("SPE1.DATA" , "ecl_run")
-            run_ecl100("ecl_run/SPE1.DATA", "2014.2")
+            ecl_config = Ecl100Config( )
+            run(ecl_config, ["ecl_run/SPE1.DATA", "--version=2014.2"])
 
             self.assertTrue( os.path.isfile("ecl_run/SPE1.DATA"))
             self.assertTrue( os.path.isfile("ecl_run/SPE1.DATA"))
@@ -197,12 +203,13 @@ class EclRunTest(ResTest):
         with TestAreaContext("ecl_run") as ta:
             self.init_config()
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
-            argv = ["run_ecl100_nocheck" , "2014.2" , "SPE1_ERROR"]
-            ecl_run = EclRun(argv)
-            ecl_run.runEclipse( )
+            ecl_config = Ecl100Config()
+            run(ecl_config, ["SPE1_EROOR", "--version=2014.2", "--ignore-errors"])
 
             # Monkey patching the ecl_run to use an executable which will fail with exit(1),
             # in the nocheck mode that should also be OK.
+            sim = ecl_config.sim("2014.2")
+            ecl_run = EclRun("SPE1_ERROR", sim, check_status = False)
             ecl_run.sim.executable = os.path.join( self.SOURCE_ROOT , "python/tests/res/fm/ecl_run_fail")
             ecl_run.runEclipse( )
 
@@ -212,21 +219,10 @@ class EclRunTest(ResTest):
         with TestAreaContext("ecl_run") as ta:
             self.init_config()
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_PARALLELL.DATA"))
-            argv = ["run_ecl100" , "2014.2" , "SPE1_PARALLELL.DATA" , "2"]
-            ecl_run = EclRun(argv)
-            ecl_run.runEclipse( )
+            ecl_config = Ecl100Config()
+            run(ecl_config, ["SPE1_PARALLELL.DATA", "--version=2014.2", "--num-cpu=2"])
             self.assertTrue( os.path.isfile( os.path.join( ecl_run.runPath() , "%s.stderr" % ecl_run.baseName())))
             self.assertTrue( os.path.isfile( os.path.join( ecl_run.runPath() , "%s.LOG" % ecl_run.baseName())))
-
-
-    @statoil_test()
-    def test_mpi_run_api(self):
-        with TestAreaContext("ecl_run") as ta:
-            self.init_config()
-            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_PARALLELL.DATA"))
-            simulate("ecl100", "2014.2", "SPE1_PARALLELL.DATA", num_cpu = 2)
-
-
 
 
     @statoil_test()
@@ -235,8 +231,9 @@ class EclRunTest(ResTest):
             self.init_config()
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
-            argv = ["run_ecl100" , "2014.2" , "SPE1"]
-            ecl_run = EclRun(argv)
+            ecl_config = Ecl100Config()
+            sim = ecl_config.sim("2014.2")
+            ecl_run = EclRun("SPE1", sim)
             ret_value = ecl_run.summary_block( )
             self.assertTrue( ret_value is None )
 
@@ -280,8 +277,9 @@ class EclRunTest(ResTest):
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
 
-            argv = ["run_ecl100" , "2014.2" , "SPE1.DATA"]
-            ecl_run = EclRun(argv)
+            ecl_config = Ecl100Config()
+            sim = ecl_config.sim("2014.2")
+            ecl_run = EclRun("2014.2", sim)
             ecl_run.runEclipse( )
 
             prt_file = os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/parse/ERROR.PRT")

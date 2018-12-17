@@ -1,6 +1,6 @@
 from .ecl_config import Ecl100Config, FlowConfig
 from .ecl_run import EclRun
-
+from .script import run
 
 def simulate(simulator, version, data_file, num_cpu = 1, check = True):
     if simulator == "ecl100":
@@ -13,22 +13,3 @@ def simulate(simulator, version, data_file, num_cpu = 1, check = True):
         raise Exception("No such simulator: {}".format(simulator))
 
 
-def run_flow(data_file, version = None, num_cpu = 1, check=True):
-    config = FlowConfig()
-    sim = config.sim(version)
-    ecl_run = EclRun(data_file, sim, num_cpu = num_cpu, check_status=check)
-    ecl_run.runEclipse()
-
-
-def run_ecl100(data_file, version = None, num_cpu = 1, check=True):
-    config = Ecl100Config()
-    sim = config.sim(version)
-    ecl_run = EclRun(data_file, sim, num_cpu = num_cpu, check_status=check)
-    ecl_run.runEclipse()
-
-
-def run_ecl300(data_file, version = None, num_cpu = 1, check=True):
-    config = Ecl300Config()
-    sim = config.sim(version)
-    ecl_run = EclRun(data_file, sim, num_cpu = num_cpu, check_status=check)
-    ecl_run.runEclipse()
