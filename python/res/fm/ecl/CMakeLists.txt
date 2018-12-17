@@ -38,6 +38,7 @@ endif()
 
 
 configure_file( ecl100_config.yml "${PROJECT_BINARY_DIR}/${PYTHON_INSTALL_PREFIX}/res/fm/ecl/ecl100_config.yml" COPYONLY)
+configure_file( ecl300_config.yml "${PROJECT_BINARY_DIR}/${PYTHON_INSTALL_PREFIX}/res/fm/ecl/ecl300_config.yml" COPYONLY)
 
 add_python_package("python.res.fm.ecl" ${PYTHON_INSTALL_PREFIX}/res/fm/ecl "${PYTHON_SOURCES}" True)
 
