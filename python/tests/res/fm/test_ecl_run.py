@@ -182,37 +182,37 @@ class EclRunTest(ResTest):
 #
 #
 #
-#    @statoil_test()
-#    def test_failed_run(self):
-#        with TestAreaContext("ecl_run") as ta:
-#            self.init_ecl100_config()
-#            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
-#            ecl_config = Ecl100Config()
-#            sim = ecl_config.sim("2014.2")
-#            ecl_run = EclRun("SPE1_ERROR", sim)
-#            with self.assertRaises(Exception):
-#                ecl_run.runEclipse( )
-#
-#            try:
-#                ecl_run.runEclipse( )
-#            except Exception as e:
-#                self.assertTrue( "ERROR" in str(e) )
-#
-#
-#    @statoil_test()
-#    def test_failed_run_OK(self):
-#        with TestAreaContext("ecl_run") as ta:
-#            self.init_ecl100_config()
-#            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
-#            ecl_config = Ecl100Config()
-#            run(ecl_config, ["SPE1_ERROR", "--version=2014.2", "--ignore-errors"])
-#
-#            # Monkey patching the ecl_run to use an executable which will fail with exit(1),
-#            # in the nocheck mode that should also be OK.
-#            sim = ecl_config.sim("2014.2")
-#            ecl_run = EclRun("SPE1_ERROR", sim, check_status = False)
-#            ecl_run.sim.executable = os.path.join( self.SOURCE_ROOT , "python/tests/res/fm/ecl_run_fail")
-#            ecl_run.runEclipse( )
+    @statoil_test()
+    def test_failed_run(self):
+        with TestAreaContext("ecl_run") as ta:
+            self.init_ecl100_config()
+            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
+            ecl_config = Ecl100Config()
+            sim = ecl_config.sim("2014.2")
+            ecl_run = EclRun("SPE1_ERROR", sim)
+            with self.assertRaises(Exception):
+                ecl_run.runEclipse( )
+
+            try:
+                ecl_run.runEclipse( )
+            except Exception as e:
+                self.assertTrue( "ERROR" in str(e) )
+
+
+    @statoil_test()
+    def test_failed_run_OK(self):
+        with TestAreaContext("ecl_run") as ta:
+            self.init_ecl100_config()
+            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
+            ecl_config = Ecl100Config()
+            run(ecl_config, ["SPE1_ERROR", "--version=2014.2", "--ignore-errors"])
+
+            # Monkey patching the ecl_run to use an executable which will fail with exit(1),
+            # in the nocheck mode that should also be OK.
+            sim = ecl_config.sim("2014.2")
+            ecl_run = EclRun("SPE1_ERROR", sim, check_status = False)
+            ecl_run.sim.executable = os.path.join( self.SOURCE_ROOT , "python/tests/res/fm/ecl_run_fail")
+            ecl_run.runEclipse( )
 
 
     @statoil_test()
