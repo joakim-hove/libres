@@ -243,31 +243,31 @@ class EclRunTest(ResTest):
 #            self.assertTrue(isinstance(ecl_sum, EclSum))
 
 
-    @statoil_test()
-    def test_check(self):
-        full_case   = os.path.join(self.SOURCE_ROOT, "test-data/Statoil/ECLIPSE/Gurbat/ECLIPSE" )
-        short_case  = os.path.join(self.SOURCE_ROOT, "test-data/Statoil/ECLIPSE/ShortSummary/ECLIPSE" )
-        failed_case = os.path.join(self.SOURCE_ROOT, "test-data/Statoil/ECLIPSE/SummaryFail/NOR-2013A_R002_1208-0")
-
-        with self.assertRaises(IOError):
-            self.assertTrue( EclRun.checkCase( full_case , failed_case ))
-
-        with self.assertRaises(IOError):
-            self.assertTrue( EclRun.checkCase( full_case , "DOES-NOT-EXIST" ))
-
-        with self.assertRaises(IOError):
-            self.assertTrue( EclRun.checkCase( "DOES-NOT-EXIST" , full_case))
-
-        with self.assertRaises(ValueError):
-            EclRun.checkCase( full_case , short_case )
-
-        with TestAreaContext("ecl_check1"):
-            self.assertTrue( EclRun.checkCase( full_case , full_case ))
-            self.assertTrue( os.path.isfile("CHECK_ECLIPSE_RUN.OK"))
-
-        with TestAreaContext("ecl_check2"):
-            self.assertTrue( EclRun.checkCase( short_case , full_case ))   # Simulation is longer than refcase - OK
-            self.assertTrue( os.path.isfile("CHECK_ECLIPSE_RUN.OK"))
+#    @statoil_test()
+#    def test_check(self):
+#        full_case   = os.path.join(self.SOURCE_ROOT, "test-data/Statoil/ECLIPSE/Gurbat/ECLIPSE" )
+#        short_case  = os.path.join(self.SOURCE_ROOT, "test-data/Statoil/ECLIPSE/ShortSummary/ECLIPSE" )
+#        failed_case = os.path.join(self.SOURCE_ROOT, "test-data/Statoil/ECLIPSE/SummaryFail/NOR-2013A_R002_1208-0")
+#
+#        with self.assertRaises(IOError):
+#            self.assertTrue( EclRun.checkCase( full_case , failed_case ))
+#
+#        with self.assertRaises(IOError):
+#            self.assertTrue( EclRun.checkCase( full_case , "DOES-NOT-EXIST" ))
+#
+#        with self.assertRaises(IOError):
+#            self.assertTrue( EclRun.checkCase( "DOES-NOT-EXIST" , full_case))
+#
+#        with self.assertRaises(ValueError):
+#            EclRun.checkCase( full_case , short_case )
+#
+#        with TestAreaContext("ecl_check1"):
+#            self.assertTrue( EclRun.checkCase( full_case , full_case ))
+#            self.assertTrue( os.path.isfile("CHECK_ECLIPSE_RUN.OK"))
+#
+#        with TestAreaContext("ecl_check2"):
+#            self.assertTrue( EclRun.checkCase( short_case , full_case ))   # Simulation is longer than refcase - OK
+#            self.assertTrue( os.path.isfile("CHECK_ECLIPSE_RUN.OK"))
 
 
 
