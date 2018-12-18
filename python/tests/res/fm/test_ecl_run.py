@@ -215,32 +215,31 @@ class EclRunTest(ResTest):
 #            ecl_run.runEclipse( )
 
 
-#    @statoil_test()
-#    def test_mpi_run(self):
-#        with TestAreaContext("ecl_run") as ta:
-#            self.init_ecl100_config()
-#            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_PARALLELL.DATA"))
-#            ecl_config = Ecl100Config()
-#            run(ecl_config, ["SPE1_PARALLELL.DATA", "--version=2014.2", "--num-cpu=2"])
-#            self.assertTrue( os.path.isfile( os.path.join( ecl_run.runPath() , "%s.stderr" % ecl_run.baseName())))
-#            self.assertTrue( os.path.isfile( os.path.join( ecl_run.runPath() , "%s.LOG" % ecl_run.baseName())))
-#
-#
-#    @statoil_test()
-#    def test_summary_block(self):
-#        with TestAreaContext("ecl_run") as ta:
-#            self.init_ecl100_config()
-#            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
-#            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
-#            ecl_config = Ecl100Config()
-#            sim = ecl_config.sim("2014.2")
-#            ecl_run = EclRun("SPE1", sim)
-#            ret_value = ecl_run.summary_block( )
-#            self.assertTrue( ret_value is None )
-#
-#            ecl_run.runEclipse( )
-#            ecl_sum = ecl_run.summary_block( )
-#            self.assertTrue(isinstance(ecl_sum, EclSum))
+    @statoil_test()
+    def test_mpi_run(self):
+        with TestAreaContext("ecl_run") as ta:
+            self.init_ecl100_config()
+            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_PARALLELL.DATA"))
+            ecl_config = Ecl100Config()
+            run(ecl_config, ["SPE1_PARALLELL.DATA", "--version=2014.2", "--num-cpu=2"])
+            self.assertTrue( os.path.isfile( "SPE1_PARALLELL.stderr"))
+            self.assertTrue( os.path.isfile( "SPE1_PARALLELL.LOG"))
+
+
+    @statoil_test()
+    def test_summary_block(self):
+        with TestAreaContext("ecl_run") as ta:
+            self.init_ecl100_config()
+            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
+            ecl_config = Ecl100Config()
+            sim = ecl_config.sim("2014.2")
+            ecl_run = EclRun("SPE1.DATA", sim)
+            ret_value = ecl_run.summary_block( )
+            self.assertTrue( ret_value is None )
+
+            ecl_run.runEclipse( )
+            ecl_sum = ecl_run.summary_block( )
+            self.assertTrue(isinstance(ecl_sum, EclSum))
 
 
     @statoil_test()

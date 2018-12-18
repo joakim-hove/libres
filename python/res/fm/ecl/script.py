@@ -12,6 +12,11 @@ def run(config, argv):
     parser.add_argument("--ignore-errors", dest="ignore_errors", action="store_true")
 
     options = parser.parse_args(argv)
-    sim = config.sim(version = options.version)
+
+    if options.num_cpu > 1:
+        sim = config.mpi_sim(version = options.version)
+    else:
+        sim = config.sim(version = options.version)
+
     run = EclRun(options.ecl_case, sim, num_cpu = options.num_cpu, check_status = not options.ignore_errors)
     run.runEclipse()
