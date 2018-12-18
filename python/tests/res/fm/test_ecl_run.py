@@ -40,7 +40,7 @@ class EclRunTest(ResTest):
         self.ecl_config_path = os.path.dirname( inspect.getsourcefile(Ecl100Config) )
 
 
-    def init_config(self):
+    def init_ecl100_config(self):
         conf = {"env" : {"F_UFMTENDIAN" : "big",
                          "LM_LICENSE_FILE" : "7321@eclipse-lic-no.statoil.no",
                          "ARCH" : "x86_64"},
@@ -51,7 +51,7 @@ class EclRunTest(ResTest):
                                                               "P4_RSHCOMMAND" : "ssh",
                                                               "LD_LIBRARY_PATH" : "/prog/ecl/grid/tools/linux_x86_64/intel/mpi/5.0.2.044/lib64:$LD_LIBRARY_PATH",
                                                               "PATH" : "/prog/ecl/grid/tools/linux_x86_64/intel/mpi/5.0.2.044/bin64:$PATH"}}}}}
-        with open("ecl_config.yml","w") as f:
+        with open("ecl100_config.yml","w") as f:
             f.write( yaml.dump(conf) )
         os.environ["ECL100_SITE_CONFIG"] = "ecl100_config.yml"
 
@@ -140,7 +140,7 @@ class EclRunTest(ResTest):
 #    @statoil_test()
 #    def test_run(self):
 #        with TestAreaContext("ecl_run") as ta:
-#            self.init_config()
+#            self.init_ecl100_config()
 #            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
 #            os.makedirs("ecl_run")
 #            shutil.move("SPE1.DATA" , "ecl_run")
@@ -167,7 +167,7 @@ class EclRunTest(ResTest):
 #    @statoil_test()
 #    def test_run_api(self):
 #        with TestAreaContext("ecl_run_api") as ta:
-#            self.init_config()
+#            self.init_ecl100_config()
 #            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
 #            os.makedirs("ecl_run")
 #            shutil.move("SPE1.DATA" , "ecl_run")
@@ -185,7 +185,7 @@ class EclRunTest(ResTest):
 #    @statoil_test()
 #    def test_failed_run(self):
 #        with TestAreaContext("ecl_run") as ta:
-#            self.init_config()
+#            self.init_ecl100_config()
 #            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
 #            ecl_config = Ecl100Config()
 #            sim = ecl_config.sim("2014.2")
@@ -202,7 +202,7 @@ class EclRunTest(ResTest):
 #    @statoil_test()
 #    def test_failed_run_OK(self):
 #        with TestAreaContext("ecl_run") as ta:
-#            self.init_config()
+#            self.init_ecl100_config()
 #            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
 #            ecl_config = Ecl100Config()
 #            run(ecl_config, ["SPE1_ERROR", "--version=2014.2", "--ignore-errors"])
@@ -218,7 +218,7 @@ class EclRunTest(ResTest):
 #    @statoil_test()
 #    def test_mpi_run(self):
 #        with TestAreaContext("ecl_run") as ta:
-#            self.init_config()
+#            self.init_ecl100_config()
 #            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_PARALLELL.DATA"))
 #            ecl_config = Ecl100Config()
 #            run(ecl_config, ["SPE1_PARALLELL.DATA", "--version=2014.2", "--num-cpu=2"])
@@ -229,7 +229,7 @@ class EclRunTest(ResTest):
 #    @statoil_test()
 #    def test_summary_block(self):
 #        with TestAreaContext("ecl_run") as ta:
-#            self.init_config()
+#            self.init_ecl100_config()
 #            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
 #            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
 #            ecl_config = Ecl100Config()
@@ -243,38 +243,38 @@ class EclRunTest(ResTest):
 #            self.assertTrue(isinstance(ecl_sum, EclSum))
 
 
-#    @statoil_test()
-#    def test_check(self):
-#        full_case   = os.path.join(self.SOURCE_ROOT, "test-data/Statoil/ECLIPSE/Gurbat/ECLIPSE" )
-#        short_case  = os.path.join(self.SOURCE_ROOT, "test-data/Statoil/ECLIPSE/ShortSummary/ECLIPSE" )
-#        failed_case = os.path.join(self.SOURCE_ROOT, "test-data/Statoil/ECLIPSE/SummaryFail/NOR-2013A_R002_1208-0")
-#
-#        with self.assertRaises(IOError):
-#            self.assertTrue( EclRun.checkCase( full_case , failed_case ))
-#
-#        with self.assertRaises(IOError):
-#            self.assertTrue( EclRun.checkCase( full_case , "DOES-NOT-EXIST" ))
-#
-#        with self.assertRaises(IOError):
-#            self.assertTrue( EclRun.checkCase( "DOES-NOT-EXIST" , full_case))
-#
-#        with self.assertRaises(ValueError):
-#            EclRun.checkCase( full_case , short_case )
-#
-#        with TestAreaContext("ecl_check1"):
-#            self.assertTrue( EclRun.checkCase( full_case , full_case ))
-#            self.assertTrue( os.path.isfile("CHECK_ECLIPSE_RUN.OK"))
-#
-#        with TestAreaContext("ecl_check2"):
-#            self.assertTrue( EclRun.checkCase( short_case , full_case ))   # Simulation is longer than refcase - OK
-#            self.assertTrue( os.path.isfile("CHECK_ECLIPSE_RUN.OK"))
+    @statoil_test()
+    def test_check(self):
+        full_case   = os.path.join(self.SOURCE_ROOT, "test-data/Statoil/ECLIPSE/Gurbat/ECLIPSE" )
+        short_case  = os.path.join(self.SOURCE_ROOT, "test-data/Statoil/ECLIPSE/ShortSummary/ECLIPSE" )
+        failed_case = os.path.join(self.SOURCE_ROOT, "test-data/Statoil/ECLIPSE/SummaryFail/NOR-2013A_R002_1208-0")
+
+        with self.assertRaises(IOError):
+            self.assertTrue( EclRun.checkCase( full_case , failed_case ))
+
+        with self.assertRaises(IOError):
+            self.assertTrue( EclRun.checkCase( full_case , "DOES-NOT-EXIST" ))
+
+        with self.assertRaises(IOError):
+            self.assertTrue( EclRun.checkCase( "DOES-NOT-EXIST" , full_case))
+
+        with self.assertRaises(ValueError):
+            EclRun.checkCase( full_case , short_case )
+
+        with TestAreaContext("ecl_check1"):
+            self.assertTrue( EclRun.checkCase( full_case , full_case ))
+            self.assertTrue( os.path.isfile("CHECK_ECLIPSE_RUN.OK"))
+
+        with TestAreaContext("ecl_check2"):
+            self.assertTrue( EclRun.checkCase( short_case , full_case ))   # Simulation is longer than refcase - OK
+            self.assertTrue( os.path.isfile("CHECK_ECLIPSE_RUN.OK"))
 
 
 
     @statoil_test()
     def test_error_parse(self):
         with TestAreaContext("ecl_run") as ta:
-            self.init_config()
+            self.init_ecl100_config()
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
             prt_file = os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/parse/ERROR.PRT")
             shutil.copy(prt_file , "SPE1.PRT")
