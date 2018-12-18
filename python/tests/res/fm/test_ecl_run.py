@@ -60,7 +60,6 @@ class EclRunTest(ResTest):
         # This test can make do with a mock simulator; - just something executable
 
         with TestAreaContext("ecl_run"):
-            self.init_config()
             conf = {"versions" : {"2014.2" : {"scalar": {"executable" : "bin/scalar_exe"},
                                               "mpi" : {"executable" : "bin/mpi_exe",
                                                        "mpirun" : "bin/mpirun"}}}}
@@ -190,7 +189,7 @@ class EclRunTest(ResTest):
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
             ecl_config = Ecl100Config()
             sim = ecl_config.sim("2014.2")
-            ecl_run = EclRun("SPE1.ERROR", sim)
+            ecl_run = EclRun("SPE1_ERROR", sim)
             with self.assertRaises(Exception):
                 ecl_run.runEclipse( )
 
@@ -206,7 +205,7 @@ class EclRunTest(ResTest):
             self.init_config()
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
             ecl_config = Ecl100Config()
-            run(ecl_config, ["SPE1_EROOR", "--version=2014.2", "--ignore-errors"])
+            run(ecl_config, ["SPE1_ERROR", "--version=2014.2", "--ignore-errors"])
 
             # Monkey patching the ecl_run to use an executable which will fail with exit(1),
             # in the nocheck mode that should also be OK.
@@ -276,16 +275,13 @@ class EclRunTest(ResTest):
     def test_error_parse(self):
         with TestAreaContext("ecl_run") as ta:
             self.init_config()
-            ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1_ERROR.DATA"))
             ta.copy_file( os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/SPE1.DATA"))
+            prt_file = os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/parse/ERROR.PRT")
+            shutil.copy(prt_file , "SPE1.PRT")
 
             ecl_config = Ecl100Config()
             sim = ecl_config.sim("2014.2")
-            ecl_run = EclRun("2014.2", sim)
-            ecl_run.runEclipse( )
-
-            prt_file = os.path.join(self.SOURCE_ROOT , "test-data/local/eclipse/parse/ERROR.PRT")
-            shutil.copy(prt_file , "SPE1.PRT")
+            ecl_run = EclRun("SPE1.DATA", sim)
 
             error_list = ecl_run.parseErrors( )
             self.assertEqual( len(error_list) , 2 )
