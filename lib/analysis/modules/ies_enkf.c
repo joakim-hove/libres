@@ -103,6 +103,7 @@ struct ies_enkf_data_struct {
    bool      converged;               // GN has converged
    ies_enkf_config_type * config;     // This I don't understand but I assume I include data from the ies_enkf_config_type defined in ies_enkf_config.c
    bool      AAprojection;            // For including the AAprojection of Y
+   FILE*     log_fp;                  // logfile id
 };
 
 static UTIL_SAFE_CAST_FUNCTION( ies_enkf_data , IES_ENKF_TYPE_ID )
@@ -132,6 +133,7 @@ void * ies_enkf_data_alloc( rng_type * rng) {
   data->converged            = false;
   data->config               = ies_enkf_config_alloc();
   data->AAprojection         = true;
+  data->log_fp               = NULL;
   return data;
 }
 
@@ -141,24 +143,24 @@ void ies_enkf_data_free( void * arg ) {
   free( data );
 }
 
-void teccost(matrix_type * W,
-             matrix_type * D,
+void static teccost(const matrix_type * W,
+             const matrix_type * D,
              const char * fname,
-             int ens_size,
-             int izone)
+             const int ens_size,
+             const int izone)
 {
-   FILE *fp2;
+   FILE *fp;
    float costJ[100];
 
    if (izone == 1){
-      fp2 = fopen(fname, "w");
-      fprintf(fp2, "TITLE = \"%s\"\n",fname);
-      fprintf(fp2, "VARIABLES = \"i\" \"Average J\" ");
+      fp = fopen(fname, "w");
+      fprintf(fp, "TITLE = \"%s\"\n",fname);
+      fprintf(fp, "VARIABLES = \"i\" \"Average J\" ");
       for (int i = 0; i < ens_size; i++)
-         fprintf(fp2, "\"%d\" ",i);
-      fprintf(fp2,"\n");
+         fprintf(fp, "\"%d\" ",i);
+      fprintf(fp,"\n");
    } else {
-      fp2 = fopen(fname, "a");
+      fp = fopen(fname, "a");
    }
 
    float costf=0.0;
@@ -168,22 +170,22 @@ void teccost(matrix_type * W,
    }
    costf= costf/ens_size;
 
-   fprintf(fp2,"%2d %10.3f ", izone-1, costf) ;
+   fprintf(fp,"%2d %10.3f ", izone-1, costf) ;
    for (int i = 0; i < ens_size; i++)
-      fprintf(fp2,"%10.3f ", costJ[i] ) ;
-   fprintf(fp2,"\n") ;
-   fclose(fp2);
+      fprintf(fp,"%10.3f ", costJ[i] ) ;
+   fprintf(fp,"\n") ;
+   fclose(fp);
 }
 
-void teclog(matrix_type * W,
-            matrix_type * D,
-            matrix_type * DW,
+void static teclog(const matrix_type * W,
+            const matrix_type * D,
+            const matrix_type * DW,
             const char * fname,
-            int ens_size,
-            int itnr,
-            double rcond,
-            int nrsing,
-            int nrobs)
+            const int ens_size,
+            const int itnr,
+            const double rcond,
+            const int nrsing,
+            const int nrobs)
 {
 
    double diff1W = 0.0;
@@ -220,61 +222,66 @@ void teclog(matrix_type * W,
    fclose(fp);
 }
 
-void tecfld(matrix_type * W,
+void static tecfld(const matrix_type * W,
            const char * fname,
            const char * vname,
-           int ii,
-           int jj,
+           int idim,
+           int jdim,
            int izone)
 {
-   FILE *fp2;
-   int ic;
+   FILE *fp;
 
    if (izone == 1){
-      fp2 = fopen(fname, "w");
-      fprintf(fp2, "TITLE = \"%s\"\n",fname);
-      fprintf(fp2, "VARIABLES = \"i-index\" \"j-index\" \"%s\"\n",vname);
-      fprintf(fp2, "ZONE F=BLOCK, T=\"Iteration %d\", I=%d, J=%d, K=1\n",izone, ii, jj);
-      ic=0;
-      for (int j=0;j<ii;j++){
-         for (int i=0;i<jj;i++){
-            ic=ic+1;
-            fprintf(fp2,"%d ",i);
-            if (ic==30){
-               ic=0;
-               fprintf(fp2,"\n");
+      fp = fopen(fname, "w");
+      fprintf(fp, "TITLE = \"%s\"\n",fname);
+      fprintf(fp, "VARIABLES = \"i-index\" \"j-index\" \"%s\"\n",vname);
+      fprintf(fp, "ZONE F=BLOCK, T=\"Iteration %d\", I=%d, J=%d, K=1\n",izone, idim, jdim);
+      {
+         int ic=0;
+         for (int j=0;j<jdim;j++){
+            for (int i=0;i<idim;i++){
+               ic=ic+1;
+               fprintf(fp,"%d ",i);
+               if (ic==30){
+                  ic=0;
+                  fprintf(fp,"\n");
+               }
             }
          }
       }
 
-      ic=0;
-      for (int j=0;j<ii;j++){
-         for (int i=0;i<jj;i++){
-            ic=ic+1;
-            fprintf(fp2,"%d ",j);
-            if (ic==30){
-               ic=0;
-               fprintf(fp2,"\n");
+      {
+         int ic=0;
+         for (int j=0;j<jdim;j++){
+            for (int i=0;i<idim;i++){
+               ic=ic+1;
+               fprintf(fp,"%d ",j);
+               if (ic==30){
+                  ic=0;
+                  fprintf(fp,"\n");
+               }
             }
          }
       }
    } else {
-      fp2 = fopen(fname, "a");
-      fprintf(fp2, "ZONE F=BLOCK, T=\"Iteration %d\", I=%d, J=%d, K=1, VARSHARELIST = ([1,2]=1)",izone, ii, jj);
+      fp = fopen(fname, "a");
+      fprintf(fp, "ZONE F=BLOCK, T=\"Iteration %d\", I=%d, J=%d, K=1, VARSHARELIST = ([1,2]=1)",izone, idim, jdim);
    }
 
-   ic=0;
-   for (int j=0;j<ii;j++){
-      for (int i=0;i<jj;i++){
-         ic=ic+1;
-         fprintf(fp2,"%12.5e ",matrix_iget(W , i,j));
-         if (ic==30){
-            ic=0;
-            fprintf(fp2,"\n");
+   {
+      int ic=0;
+      for (int j=0;j<jdim;j++){
+         for (int i=0;i<idim;i++){
+            ic=ic+1;
+            fprintf(fp,"%12.5e ",matrix_iget(W , i,j));
+            if (ic==30){
+               ic=0;
+               fprintf(fp,"\n");
+            }
          }
       }
    }
-   fclose(fp2);
+   fclose(fp);
 }
 
 
@@ -374,23 +381,21 @@ void ies_enkf_updateA( void * module_data,
    data->gauss_newton_conv    = ies_enkf_config_get_gauss_newton_conv( data->config );
 
    if (data->iteration_nr > 3) data->ies_steplength=data->ies_steplength/2;
-   if (data->iteration_nr > 6) data->ies_steplength=data->ies_steplength/4;
 
 
-   FILE *fp;
    if (data->iteration_nr == 1){
-      fp=freopen(data->ies_logfile, "w", stdout);
+      data->log_fp=fopen(data->ies_logfile, "w");
    } else {
-      fp=freopen(data->ies_logfile, "a", stdout);
+      data->log_fp=fopen(data->ies_logfile, "a");
    }
 
-   fprintf(stdout,"\n\n\n***********************************************************************\n");
-   fprintf(stdout,"IES Iteration   = %d\n", data->iteration_nr);
-   fprintf(stdout,"----ies_steplength  = %f\n", data->ies_steplength);
-   fprintf(stdout,"----ies_inversion   = %d\n", data->ies_inversion);
-   fprintf(stdout,"----ies_debug       = %d\n", data->ies_debug);
-   fprintf(stdout,"----truncation      = %f %d\n", data->truncation, data->subspace_dimension);
-   fprintf(stdout,"----ies_logfile     = %s\n", data->ies_logfile);
+   fprintf(data->log_fp,"\n\n\n***********************************************************************\n");
+   fprintf(data->log_fp,"IES Iteration   = %d\n", data->iteration_nr);
+   fprintf(data->log_fp,"----ies_steplength  = %f\n", data->ies_steplength);
+   fprintf(data->log_fp,"----ies_inversion   = %d\n", data->ies_inversion);
+   fprintf(data->log_fp,"----ies_debug       = %d\n", data->ies_debug);
+   fprintf(data->log_fp,"----truncation      = %f %d\n", data->truncation, data->subspace_dimension);
+   fprintf(data->log_fp,"----ies_logfile     = %s\n", data->ies_logfile);
    bool dbg = ies_enkf_config_get_ies_debug( data->config ) ;
 
 /***************************************************************************************************************/
@@ -415,64 +420,64 @@ void ies_enkf_updateA( void * module_data,
 /***************************************************************************************************************/
    if (!data->E){
       // We store the initial observation perturbations corresponding to data->obs_mask0.
-      fprintf(stdout,"Allocating and assigning data->E \n");
+      fprintf(data->log_fp,"Allocating and assigning data->E \n");
       data->E=matrix_alloc( nrobs , ens_size  );
       matrix_assign(data->E,Ein);
-      if (dbg) matrix_pretty_fprint_submat(data->E,"data->E","%11.5f",stdout,0,m_nrobs,0,m_ens_size) ;
+      if (dbg) matrix_pretty_fprint_submat(data->E,"data->E","%11.5f",data->log_fp,0,m_nrobs,0,m_ens_size) ;
    }
 
    if (!data->W){
       // We initialize data-W which will store W for use in next iteration                    (Line 9)
-      fprintf(stdout,"Allocating data->W\n");
+      fprintf(data->log_fp,"Allocating data->W\n");
       data->W=matrix_alloc( ens_size , ens_size  );
       matrix_set(data->W , 0.0) ;
-      if (dbg) matrix_pretty_fprint_submat(data->W,"Ini data->W","%11.5f",stdout,0,m_ens_size,0,m_ens_size) ;
+      if (dbg) matrix_pretty_fprint_submat(data->W,"Ini data->W","%11.5f",data->log_fp,0,m_ens_size,0,m_ens_size) ;
    }
 
    if (!data->A0){
       // We store the initial ensemble to use it in final update equation                     (Line 11)
-      fprintf(stdout,"Allocating and assigning data->A0 \n");
+      fprintf(data->log_fp,"Allocating and assigning data->A0 \n");
       data->A0=matrix_alloc( state_size , ens_size  );
       matrix_assign(data->A0,A);
-      if (dbg) matrix_pretty_fprint_submat(data->A0,"Ini data->A0","%11.5f",stdout,0,m_state_size,0,m_ens_size) ;
+      if (dbg) matrix_pretty_fprint_submat(data->A0,"Ini data->A0","%11.5f",data->log_fp,0,m_state_size,0,m_ens_size) ;
    }
 
 
 
 /***************************************************************************************************************/
-   fprintf(stdout,"----active ens_size  = %d, total ens_size_msk = %d\n", ens_size,ens_size_msk);
-   fprintf(stdout,"----active nrobs     = %d, nrobs_inp= %d, total nrobs_msk= %d\n", nrobs, nrobs_inp, nrobs_msk );
-   fprintf(stdout,"----active state_size= %d\n", state_size );
+   fprintf(data->log_fp,"----active ens_size  = %d, total ens_size_msk = %d\n", ens_size,ens_size_msk);
+   fprintf(data->log_fp,"----active nrobs     = %d, nrobs_inp= %d, total nrobs_msk= %d\n", nrobs, nrobs_inp, nrobs_msk );
+   fprintf(data->log_fp,"----active state_size= %d\n", state_size );
 
 /***************************************************************************************************************/
 /* Print initial observation mask */
-   fprintf(stdout,"obsmask_0:") ;
+   fprintf(data->log_fp,"obsmask_0:") ;
    for (int i = 0; i < nrobs_msk; i++){
-      fprintf(stdout,"%d",bool_vector_iget(data->obs_mask0,i));
-      if ((i+1)%10 == 0) fprintf(stdout," ") ;
-      if ((i+1)%100 == 0) fprintf(stdout,"\nobsmask_0:") ;
+      fprintf(data->log_fp,"%d",bool_vector_iget(data->obs_mask0,i));
+      if ((i+1)%10 == 0) fprintf(data->log_fp," ") ;
+      if ((i+1)%100 == 0) fprintf(data->log_fp,"\nobsmask_0:") ;
    }
-   fprintf(stdout,"\n");
+   fprintf(data->log_fp,"\n");
 
 /***************************************************************************************************************/
 /* Print Current observation mask */
-   fprintf(stdout,"obsmask_i:") ;
+   fprintf(data->log_fp,"obsmask_i:") ;
    for (int i = 0; i < nrobs_msk; i++){
-      fprintf(stdout,"%d",bool_vector_iget(data->obs_mask,i));
-      if ((i+1)%10 == 0) fprintf(stdout," ") ;
-      if ((i+1)%100 == 0) fprintf(stdout,"\nobsmask_i:") ;
+      fprintf(data->log_fp,"%d",bool_vector_iget(data->obs_mask,i));
+      if ((i+1)%10 == 0) fprintf(data->log_fp," ") ;
+      if ((i+1)%100 == 0) fprintf(data->log_fp,"\nobsmask_i:") ;
    }
-   fprintf(stdout,"\n");
+   fprintf(data->log_fp,"\n");
 
 /***************************************************************************************************************/
 /* Print Current ensemble mask */
-   fprintf(stdout,"ensmask_i:");
+   fprintf(data->log_fp,"ensmask_i:");
    for (int i = 0; i < ens_size_msk; i++){
-      fprintf(stdout,"%d",bool_vector_iget(data->ens_mask,i));
-      if ((i+1)%10 == 0) fprintf(stdout," ") ;
-      if ((i+1)%100 == 0) fprintf(stdout,"\n") ;
+      fprintf(data->log_fp,"%d",bool_vector_iget(data->ens_mask,i));
+      if ((i+1)%10 == 0) fprintf(data->log_fp," ") ;
+      if ((i+1)%100 == 0) fprintf(data->log_fp,"\n") ;
    }
-   fprintf(stdout,"\n\n");
+   fprintf(data->log_fp,"\n\n");
 
 /***************************************************************************************************************
 * Re structure input matrices according to new active obs_mask and ens_size.
@@ -520,20 +525,20 @@ void ies_enkf_updateA( void * module_data,
       }
    }
    if (ens_size_msk == ens_size && nrobs == nrobs_inp){
-      fprintf(stdout,"data->E copied exactly to E: %d\n",matrix_equal(data->E,E)) ;
+      fprintf(data->log_fp,"data->E copied exactly to E: %d\n",matrix_equal(data->E,E)) ;
    }
 
-   fprintf(stdout,"Input matrices\n");
-   if (dbg) matrix_pretty_fprint_submat(E,"E","%11.5f",stdout,0,m_nrobs,0,m_ens_size) ;
+   fprintf(data->log_fp,"Input matrices\n");
+   if (dbg) matrix_pretty_fprint_submat(E,"E","%11.5f",data->log_fp,0,m_nrobs,0,m_ens_size) ;
 
-   if (dbg) matrix_pretty_fprint_submat(Din,"Din","%11.5f",stdout,0,m_nrobs,0,m_ens_size) ;
-   if (dbg) matrix_pretty_fprint_submat(D,"D","%11.5f",stdout,0,m_nrobs,0,m_ens_size) ;
+   if (dbg) matrix_pretty_fprint_submat(Din,"Din","%11.5f",data->log_fp,0,m_nrobs,0,m_ens_size) ;
+   if (dbg) matrix_pretty_fprint_submat(D,"D","%11.5f",data->log_fp,0,m_nrobs,0,m_ens_size) ;
 
-   if (dbg) matrix_pretty_fprint_submat(Yin,"Yin","%11.5f",stdout,0,m_nrobs,0,m_ens_size) ;
-   if (dbg) matrix_pretty_fprint_submat(Y,"Y","%11.5f",stdout,0,m_nrobs,0,m_ens_size) ;
+   if (dbg) matrix_pretty_fprint_submat(Yin,"Yin","%11.5f",data->log_fp,0,m_nrobs,0,m_ens_size) ;
+   if (dbg) matrix_pretty_fprint_submat(Y,"Y","%11.5f",data->log_fp,0,m_nrobs,0,m_ens_size) ;
 
-   if (dbg) matrix_pretty_fprint_submat(Rin,"Rin","%11.5f",stdout,0,m_nrobs,0,m_nrobs) ;
-   if (dbg) matrix_pretty_fprint_submat(R,"R","%11.5f",stdout,0,m_nrobs,0,m_nrobs) ;
+   if (dbg) matrix_pretty_fprint_submat(Rin,"Rin","%11.5f",data->log_fp,0,m_nrobs,0,m_nrobs) ;
+   if (dbg) matrix_pretty_fprint_submat(R,"R","%11.5f",data->log_fp,0,m_nrobs,0,m_nrobs) ;
 
    matrix_inplace_add(D,E);          // Add old measurement perturbations
 
@@ -555,34 +560,34 @@ void ies_enkf_updateA( void * module_data,
    double      * eig = (double*)util_calloc( ens_size , sizeof * eig);
 
 
-   if (dbg) matrix_pretty_fprint_submat(A,"Ain","%11.5f",stdout,0,m_state_size,0,m_ens_size) ;
-   if (dbg) fprintf(stdout,"Computed matrices\n");
+   if (dbg) matrix_pretty_fprint_submat(A,"Ain","%11.5f",data->log_fp,0,m_state_size,0,m_ens_size) ;
+   if (dbg) fprintf(data->log_fp,"Computed matrices\n");
 
 /***************************************************************************************************************
 *  Subtract mean of predictions to generate predicted ensemble anomaly matrix                 (Line 5)
 */
    matrix_subtract_row_mean( Y );   // Y=Y*(I-(1/ens_size)*11)
    matrix_scale(Y,nsc);             // Y=Y / sqrt(ens_size-1)
-   if (dbg) matrix_pretty_fprint_submat(Y,"Y","%11.5f",stdout,0,m_nrobs,0,m_ens_size) ;
+   if (dbg) matrix_pretty_fprint_submat(Y,"Y","%11.5f",data->log_fp,0,m_nrobs,0,m_ens_size) ;
 
 
 /***************************************************************************************************************
 *  COMPUTING THE PROJECTION Y= Y * (Ai^+ * Ai) (only used when state_size < ens_size-1)    */
    if (data->AAprojection && state_size <= ens_size -1){
-      fprintf(stdout,"Activating AAi projection for Y\n");
+      fprintf(data->log_fp,"Activating AAi projection for Y\n");
       matrix_type * Ai    = matrix_alloc_copy( A );
       matrix_type * AAi   = matrix_alloc( ens_size, ens_size  );
       matrix_subtract_row_mean(Ai);
       matrix_type * VT    = matrix_alloc( state_size, ens_size  );
       matrix_dgesvd(DGESVD_NONE , DGESVD_MIN_RETURN , Ai , eig , NULL , VT);
-      if (dbg) matrix_pretty_fprint_submat(VT,"VT","%11.5f",stdout,0,state_size-1,0,m_ens_size) ;
+      if (dbg) matrix_pretty_fprint_submat(VT,"VT","%11.5f",data->log_fp,0,state_size-1,0,m_ens_size) ;
       matrix_dgemm(AAi,VT,VT,true,false,1.0,0.0);
-      if (dbg) matrix_pretty_fprint_submat(AAi,"AAi","%11.5f",stdout,0,m_ens_size,0,m_ens_size) ;
+      if (dbg) matrix_pretty_fprint_submat(AAi,"AAi","%11.5f",data->log_fp,0,m_ens_size,0,m_ens_size) ;
       matrix_inplace_matmul(Y,AAi);
       matrix_free(Ai);
       matrix_free(AAi);
       matrix_free(VT);
-      if (dbg) matrix_pretty_fprint_submat(Y,"Yprojected","%11.5f",stdout,0,m_nrobs,0,m_ens_size) ;
+      if (dbg) matrix_pretty_fprint_submat(Y,"Yprojected","%11.5f",data->log_fp,0,m_nrobs,0,m_ens_size) ;
    }
 
 /***************************************************************************************************************
@@ -605,10 +610,10 @@ void ies_enkf_updateA( void * module_data,
    }
 
    if (ens_size_msk == ens_size){
-      fprintf(stdout,"data->W copied exactly to W0: %d\n",matrix_equal(data->W,W0)) ;
+      fprintf(data->log_fp,"data->W copied exactly to W0: %d\n",matrix_equal(data->W,W0)) ;
    }
-   if (dbg) matrix_pretty_fprint_submat(data->W,"data->W","%11.5f",stdout,0,m_ens_size,0,m_ens_size) ;
-   if (dbg) matrix_pretty_fprint_submat(W0,"W0","%11.5f",stdout,0,m_ens_size,0,m_ens_size) ;
+   if (dbg) matrix_pretty_fprint_submat(data->W,"data->W","%11.5f",data->log_fp,0,m_ens_size,0,m_ens_size) ;
+   if (dbg) matrix_pretty_fprint_submat(W0,"W0","%11.5f",data->log_fp,0,m_ens_size,0,m_ens_size) ;
 
 
 /***************************************************************************************************************
@@ -625,31 +630,31 @@ void ies_enkf_updateA( void * module_data,
    for (int i = 0; i < ens_size; i++){  // X=X+I
       matrix_iadd(X,i,i,1.0);
    }
-   if (dbg) matrix_pretty_fprint_submat(X,"OmegaT","%11.5f",stdout,0,m_ens_size,0,m_ens_size) ;
+   if (dbg) matrix_pretty_fprint_submat(X,"OmegaT","%11.5f",data->log_fp,0,m_ens_size,0,m_ens_size) ;
    if (dbg) tecfld( X, "tecOmega.dat" , "Omega", ens_size, ens_size , data->iteration_nr);
    matrix_transpose(Y,YT);         // RHS stored in YT
 
 /* Solve system and return S in YT                                                             (Line 7)   */
-   fprintf(stdout,"Solving X' S' = Y' using LU factorization:\n");
+   fprintf(data->log_fp,"Solving X' S' = Y' using LU factorization:\n");
    matrix_dgesvx(X,YT,&rcond);
-   fprintf(stdout,"dgesvx condition number= %12.5e\n",rcond);
+   fprintf(data->log_fp,"dgesvx condition number= %12.5e\n",rcond);
 
    matrix_transpose(YT,S);          // Copy solution to S
 
 
    if (data->iteration_nr == 1){
-         fprintf(stdout,"dgesvx: Y exactly equal to S: %d\n",matrix_equal(Y,S)) ;
+         fprintf(data->log_fp,"dgesvx: Y exactly equal to S: %d\n",matrix_equal(Y,S)) ;
    }
 
 
-   if (dbg) matrix_pretty_fprint_submat(S,"S","%11.5f",stdout,0,m_nrobs,0,m_ens_size) ;
+   if (dbg) matrix_pretty_fprint_submat(S,"S","%11.5f",data->log_fp,0,m_nrobs,0,m_ens_size) ;
 
 /***************************************************************************************************************
 *  INNOVATION H = S*W + D - Y   from Eq. (47)                                                  (Line 8)    */
    matrix_assign(H,D) ;                            // H=D=dobs + E - Y
    matrix_dgemm(H,S,W0,false,false,1.0,1.0);       // H=S*W + H
 
-   if (dbg) matrix_pretty_fprint_submat(H,"H","%11.5f",stdout,0,m_nrobs,0,m_ens_size) ;
+   if (dbg) matrix_pretty_fprint_submat(H,"H","%11.5f",data->log_fp,0,m_nrobs,0,m_ens_size) ;
 
 /* Store previous W for convergence test */
    matrix_assign(W,W0);
@@ -681,44 +686,44 @@ void ies_enkf_updateA( void * module_data,
 */
 
    if (data->ies_inversion > 0){
-      fprintf(stdout,"Subspace inversion. (ies_inversion=%d)\n",data->ies_inversion);
+      fprintf(data->log_fp,"Subspace inversion. (ies_inversion=%d)\n",data->ies_inversion);
       matrix_type * X1  = matrix_alloc( nrobs   , nrmin     );   // Used in subspace inversion
       matrix_type * X3  = matrix_alloc( nrobs   , ens_size  );   // Used in subspace inversion
       if (data->ies_inversion == 3){
-         fprintf(stdout,"Subspace inversion using E to represent errors. (ies_inversion=%d)\n",data->ies_inversion);
+         fprintf(data->log_fp,"Subspace inversion using E to represent errors. (ies_inversion=%d)\n",data->ies_inversion);
          matrix_scale(E,nsc);
          enkf_linalg_lowrankE( S , E , X1 , eig , data->truncation , data->subspace_dimension);
       } else if (data->ies_inversion == 2){
-         fprintf(stdout,"Subspace inversion using ensemble generated full R=EE. (ies_inversion=%d)'\n",data->ies_inversion);
+         fprintf(data->log_fp,"Subspace inversion using ensemble generated full R=EE. (ies_inversion=%d)'\n",data->ies_inversion);
          matrix_scale(E,nsc);
          matrix_type * Et = matrix_alloc_transpose( E );
          matrix_type * Cee = matrix_alloc_matmul( E , Et );
          matrix_scale(Cee,nsc*nsc); // since enkf_linalg_lowrankCinv solves (SS' + (N-1) R)^{-1}
-         if (dbg) matrix_pretty_fprint_submat(Cee,"Cee","%11.5f",stdout,0,m_nrobs,0,m_nrobs) ;
+         if (dbg) matrix_pretty_fprint_submat(Cee,"Cee","%11.5f",data->log_fp,0,m_nrobs,0,m_nrobs) ;
          enkf_linalg_lowrankCinv( S , Cee , X1 , eig , data->truncation , data->subspace_dimension);
          matrix_free( Et );
          matrix_free( Cee );
       } else if (data->ies_inversion == 1){
-         fprintf(stdout,"Subspace inversion using 'exact' full R. (ies_inversion=%d)\n",data->ies_inversion);
+         fprintf(data->log_fp,"Subspace inversion using 'exact' full R. (ies_inversion=%d)\n",data->ies_inversion);
          matrix_scale(R,nsc*nsc); // since enkf_linalg_lowrankCinv solves (SS' + (N-1) R)^{-1}
-         if (dbg) matrix_pretty_fprint_submat(R,"R","%11.5f",stdout,0,m_nrobs,0,m_nrobs) ;
+         if (dbg) matrix_pretty_fprint_submat(R,"R","%11.5f",data->log_fp,0,m_nrobs,0,m_nrobs) ;
          enkf_linalg_lowrankCinv( S , R , X1 , eig , data->truncation , data->subspace_dimension);
       }
 
       nrsing=0;
-      fprintf(stdout,"\nEig:\n");
+      fprintf(data->log_fp,"\nEig:\n");
       for (int i=0;i<nrmin;i++){
-         fprintf(stdout," %f ", eig[i]);
-         if ((i+1)%20 == 0) fprintf(stdout,"\n") ;
+         fprintf(data->log_fp," %f ", eig[i]);
+         if ((i+1)%20 == 0) fprintf(data->log_fp,"\n") ;
          if (eig[i] < 1.0) nrsing+=1;
       }
-      fprintf(stdout,"\n");
+      fprintf(data->log_fp,"\n");
 
 /*    X3 = X1 * diag(eig) * X1' * H (Similar to Eq. 14.31, Evensen (2007))                                  */
       enkf_linalg_genX3(X3 , X1 , H , eig);
 
-      if (dbg) matrix_pretty_fprint_submat(X1,"X1","%11.5f",stdout,0,m_nrobs,0,util_int_min(m_nrobs,nrmin-1)) ;
-      if (dbg) matrix_pretty_fprint_submat(X3,"X3","%11.5f",stdout,0,m_nrobs,0,m_ens_size) ;
+      if (dbg) matrix_pretty_fprint_submat(X1,"X1","%11.5f",data->log_fp,0,m_nrobs,0,util_int_min(m_nrobs,nrmin-1)) ;
+      if (dbg) matrix_pretty_fprint_submat(X3,"X3","%11.5f",data->log_fp,0,m_nrobs,0,m_ens_size) ;
 
 /*    Update data->W = (1-ies_steplength) * data->W +  ies_steplength * S' * X3                          (Line 9)    */
       matrix_dgemm(W0 , S , X3 , true , false , data->ies_steplength , 1.0-data->ies_steplength);
@@ -727,7 +732,7 @@ void ies_enkf_updateA( void * module_data,
       matrix_free( X3 );
 
    } else if (data->ies_inversion == 0) {
-      fprintf(stdout,"Exact inversion using diagonal R=I. (ies_inversion=%d)\n",data->ies_inversion);
+      fprintf(data->log_fp,"Exact inversion using diagonal R=I. (ies_inversion=%d)\n",data->ies_inversion);
       matrix_type * Z      = matrix_alloc( ens_size , ens_size  );  // Eigen vectors of S'S+I
       matrix_type * StH    = matrix_alloc( ens_size , ens_size );
       matrix_type * StS    = matrix_alloc( ens_size , ens_size );
@@ -745,12 +750,12 @@ void ies_enkf_updateA( void * module_data,
          matrix_scale_row(ZtStH,i,eig[i]);
       }
 
-      fprintf(stdout,"\nEig:\n");
+      fprintf(data->log_fp,"\nEig:\n");
       for (int i=0;i<ens_size;i++){
-         fprintf(stdout," %f ", eig[i]);
-         if ((i+1)%20 == 0) fprintf(stdout,"\n") ;
+         fprintf(data->log_fp," %f ", eig[i]);
+         if ((i+1)%20 == 0) fprintf(data->log_fp,"\n") ;
       }
-      fprintf(stdout,"\n");
+      fprintf(data->log_fp,"\n");
 
 /*    Update data->W = (1-ies_steplength) * data->W +  ies_steplength * Z * (Lamda^{-1}) Z' S' H         (Line 9)    */
       matrix_dgemm(W0 , Z , ZtStH , false , false , data->ies_steplength , 1.0-data->ies_steplength);
@@ -761,7 +766,7 @@ void ies_enkf_updateA( void * module_data,
       matrix_free(ZtStH);
    }
 
-   if (dbg) matrix_pretty_fprint_submat(W0,"Updated W","%11.5f",stdout,0,m_ens_size,0,m_ens_size) ;
+   if (dbg) matrix_pretty_fprint_submat(W0,"Updated W","%11.5f",data->log_fp,0,m_ens_size,0,m_ens_size) ;
 
 
 
@@ -784,7 +789,7 @@ void ies_enkf_updateA( void * module_data,
       }
    }
    if (ens_size_msk == ens_size){
-      fprintf(stdout,"W0 copied exactly to data->W: %d\n",matrix_equal(data->W,W0)) ;
+      fprintf(data->log_fp,"W0 copied exactly to data->W: %d\n",matrix_equal(data->W,W0)) ;
    }
 
    if (dbg) tecfld( W, "tecW.dat" , "W", ens_size, ens_size , data->iteration_nr);
@@ -798,12 +803,12 @@ void ies_enkf_updateA( void * module_data,
    for (int i = 0; i < ens_size; i++){
       matrix_iadd(X,i,i,1.0);
    }
-   if (dbg) matrix_pretty_fprint_submat(X,"X","%11.5f",stdout,0,m_ens_size,0,m_ens_size) ;
+   if (dbg) matrix_pretty_fprint_submat(X,"X","%11.5f",data->log_fp,0,m_ens_size,0,m_ens_size) ;
 
 /***************************************************************************************************************
 *  COMPUTE NEW ENSEMBLE SOLUTION FOR CURRENT ITERATION  Ei=A0*X                              (Line 11)   */
-   matrix_pretty_fprint_submat(data->A0,"data->A0","%11.5f",stdout,0,m_state_size,0,m_ens_size) ;
-   matrix_pretty_fprint_submat(A,"A^f","%11.5f",stdout,0,m_state_size,0,m_ens_size) ;
+   matrix_pretty_fprint_submat(data->A0,"data->A0","%11.5f",data->log_fp,0,m_state_size,0,m_ens_size) ;
+   matrix_pretty_fprint_submat(A,"A^f","%11.5f",data->log_fp,0,m_state_size,0,m_ens_size) ;
 
    {
       int i=-1;
@@ -815,12 +820,12 @@ void ies_enkf_updateA( void * module_data,
       }
    }
    if (ens_size_msk == ens_size){
-      fprintf(stdout,"data->A0 copied exactly to A0: %d\n",matrix_equal(data->A0,A0)) ;
+      fprintf(data->log_fp,"data->A0 copied exactly to A0: %d\n",matrix_equal(data->A0,A0)) ;
    }
 
    if (dbg) tecfld( X, "tecX.dat" , "X", ens_size, ens_size , data->iteration_nr);
    matrix_matmul(A,A0,X);
-   matrix_pretty_fprint_submat(A,"A^a","%11.5f",stdout,0,m_state_size,0,m_ens_size) ;
+   matrix_pretty_fprint_submat(A,"A^a","%11.5f",data->log_fp,0,m_state_size,0,m_ens_size) ;
 
 
 /***************************************************************************************************************
@@ -833,8 +838,8 @@ void ies_enkf_updateA( void * module_data,
 /* DONE *********************************************************************************************************/
 
 
-   fflush(stdout);
-   fclose(fp);
+   fflush(data->log_fp);
+   fclose(data->log_fp);
 
    matrix_free( Y  );
    matrix_free( D  );
@@ -907,14 +912,14 @@ bool ies_enkf_set_string( void * arg , const char * var_name , const char * valu
   }
 }
 
-bool ies_enkf_get_string( void * arg , const char * var_name ) {
+const char* ies_enkf_get_string( void * arg , const char * var_name ) {
   ies_enkf_data_type * module_data = ies_enkf_data_safe_cast( arg );
   {
     if (strcmp( var_name , IES_LOGFILE_KEY) == 0)
       return ies_enkf_config_get_ies_logfile( module_data->config );
 
     else
-       return false;
+       return NULL;
   }
 }
 
