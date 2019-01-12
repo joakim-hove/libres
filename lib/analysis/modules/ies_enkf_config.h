@@ -19,6 +19,8 @@
 #ifndef IES_ENKF_CONFIG_H
 #define IES_ENKF_CONFIG_H
 
+#include <stdbool.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
