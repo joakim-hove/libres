@@ -55,6 +55,9 @@ typedef struct ies_enkf_data_struct ies_enkf_data_type;
 #define IES_LOGFILE_KEY                  "IES_LOGFILE"
 #define IES_DEBUG_KEY                    "IES_DEBUG"
 
+
+#include "tecplot.c"
+
 //#define DEFAULT_ANALYSIS_SCALE_DATA true
 
 
