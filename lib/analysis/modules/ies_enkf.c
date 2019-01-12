@@ -38,7 +38,7 @@
 #include <ert/analysis/enkf_linalg.hpp>
 #include <ert/analysis/std_enkf.hpp>
 
-#include <ies_enkf_config.h>
+#include "ies_enkf_config.h"
 
 typedef struct ies_enkf_data_struct ies_enkf_data_type;
 
