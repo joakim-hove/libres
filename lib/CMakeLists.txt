@@ -222,12 +222,18 @@ add_library(rml_enkf SHARED analysis/modules/rml_enkf_config.c
                             analysis/modules/rml_enkf.c
                             analysis/modules/rml_enkf_common.c
                             analysis/modules/rml_enkf_log.c
-)
-target_link_libraries(rml_enkf PRIVATE res ecl ${CMAKE_DL_LIBS})
-target_include_directories(rml_enkf PRIVATE analysis/modules)
-set_target_properties(rml_enkf PROPERTIES VERSION 1.0
-                                          SOVERSION 1.0
-                                          PREFIX "")
+                            )
+
+add_library(ies SHARED analysis/modules/ies_enkf.c
+                       analysis/modules/ies_enkf_config.c)
+
+foreach (module rml_enkf ies)
+  target_link_libraries(${module} PRIVATE res ecl ${CMAKE_DL_LIBS})
+  target_include_directories(${module} PRIVATE analysis/modules)
+  set_target_properties(${module} PROPERTIES VERSION 1.0
+                                 SOVERSION 1.0
+                                 PREFIX "")
+endforeach()
 
 add_library(std_enkf_debug SHARED analysis/modules/std_enkf_debug.c)
 target_link_libraries(std_enkf_debug PRIVATE res ecl ${CMAKE_DL_LIBS})
