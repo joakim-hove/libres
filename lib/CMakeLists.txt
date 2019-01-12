@@ -224,7 +224,9 @@ add_library(rml_enkf SHARED analysis/modules/rml_enkf_config.c
                             )
 
 add_library(ies SHARED analysis/modules/ies_enkf.c
-                       analysis/modules/ies_enkf_config.c)
+                       analysis/modules/ies_enkf_config.c
+                       analysis/modules/ies_enkf_data.c)
+
 
 foreach (module rml_enkf ies)
   target_link_libraries(${module} PRIVATE res ecl ${CMAKE_DL_LIBS})
