@@ -293,6 +293,17 @@ if (NOT BUILD_TESTS)
     return ()
 endif()
 
+foreach(name ies_enkf ies_enkf_config ies_enkf_data)
+       add_executable(${name} analysis/modules/tests/${name}.c)
+       target_include_directories(${name} PRIVATE analysis/modules)
+       target_link_libraries(${name} res ies)
+       add_test(NAME ${name} COMMAND ${name})
+endforeach()
+add_executable( ies_module analysis/modules/tests/ies_enkf_module.c )
+target_link_libraries(ies_module res)
+add_test(NAME ies_module COMMAND ies_module $<TARGET_FILE:ies>)
+
+
 foreach(name ert_util_logh
              ert_util_arg_pack
              ert_util_matrix_lapack
