@@ -133,7 +133,7 @@ void ies_enkf_updateA( void * module_data,
    int state_size    = matrix_get_rows( A );
 
    double ies_steplength = ies_enkf_config_get_ies_steplength(ies_config);
-   int ies_inversion = ies_enkf_config_get_ies_inversion( ies_config );
+   ies_inversion_type ies_inversion = ies_enkf_config_get_ies_inversion( ies_config );
    double truncation = ies_enkf_config_get_truncation( ies_config );
    bool ies_debug = ies_enkf_config_get_ies_debug(ies_config);
    int subspace_dimension = ies_enkf_config_get_enkf_subspace_dimension( ies_config );
@@ -143,7 +143,7 @@ void ies_enkf_updateA( void * module_data,
    FILE * log_fp;
 
    ies_enkf_data_update_state_size( data, state_size );
-
+ 
    if (ies_enkf_data_get_iteration_nr(data) > 3)
      ies_steplength=ies_steplength/2;
 
@@ -394,31 +394,37 @@ void ies_enkf_updateA( void * module_data,
 *  With R=I the subspace inversion (ies_inversion=1) solving Eq. (a) with singular value
 *  trucation=1.000 gives exactly the same solution as the exact inversion (ies_inversion=0).
 *
-*  Using ies_inversion=1, and a step length of 1.0, one update gives identical result to ENKF_STD
-*  as long as the same SVD truncation is used.
+*  Using ies_inversion=IES_INVERSION_SUBSPACE_EXACT_R, and a step length of 1.0,
+*  one update gives identical result to ENKF_STD as long as the same SVD
+*  truncation is used.
 *
-*  With very large data sets it is likely that the inversion becomes poorly conditioned
-*  and a trucation=1.000 is not a good choice. In this case the ies_inversion > 0 and EnKF_truncation set
-*  to 0.999 or so, should stabelize the algorithm.
+*  With very large data sets it is likely that the inversion becomes poorly
+*  conditioned and a trucation=1.000 is not a good choice. In this case the
+*  ies_inversion > 0 and EnKF_truncation set to 0.999 or so, should stabelize
+*  the algorithm.
 *
-*  Using ies_inversion=2 and ies_inversion=3 gives identical results but ies_inversion=3 is much faster (N^2m)
-*  than ies_inversion=2 (Nm^2).
+*  Using ies_inversion=IES_INVERSION_SUBSPACE_EE_R and
+*  ies_inversion=IES_INVERSION_SUBSPACE_RE gives identical results but
+*  ies_inversion=IES_INVERSION_SUBSPACE_RE is much faster (N^2m) than
+*  ies_inversion=IES_INVERSION_SUBSPACE_EE_R (Nm^2).
 
-   ies_inversion=0  -> exact inversion from (b) with exact R=I
-   ies_inversion=1  -> subspace inversion from (a) with exact R
-   ies_inversion=2  -> subspace inversion from (a) with R=EE
-   ies_inversion=3  -> subspace inversion from (a) with R represented by E
+   See the enum: ies_inverson in ies_enkf_config.h:
+
+   ies_inversion=IES_INVERSION_EXACT(0)            -> exact inversion from (b) with exact R=I
+   ies_inversion=IES_INVERSION_SUBSPACE_EXACT_R(1) -> subspace inversion from (a) with exact R
+   ies_inversion=IES_INVERSION_SUBSPACE_EE_R(2)    -> subspace inversion from (a) with R=EE
+   ies_inversion=IES_INVERSION_SUBSPACE_RE(3)      -> subspace inversion from (a) with R represented by E
 */
 
-   if (ies_inversion > 0){
+   if (ies_inversion != IES_INVERSION_EXACT){
       fprintf(log_fp,"Subspace inversion. (ies_inversion=%d)\n",ies_inversion);
       matrix_type * X1  = matrix_alloc( nrobs   , nrmin     );   // Used in subspace inversion
       matrix_type * X3  = matrix_alloc( nrobs   , ens_size  );   // Used in subspace inversion
-      if (ies_inversion == 3){
+      if (ies_inversion == IES_INVERSION_SUBSPACE_RE){
          fprintf(log_fp,"Subspace inversion using E to represent errors. (ies_inversion=%d)\n",ies_inversion);
          matrix_scale(E,nsc);
          enkf_linalg_lowrankE( S , E , X1 , eig , truncation , subspace_dimension);
-      } else if (ies_inversion == 2){
+      } else if (ies_inversion == IES_INVERSION_SUBSPACE_EE_R){
          fprintf(log_fp,"Subspace inversion using ensemble generated full R=EE. (ies_inversion=%d)'\n",ies_inversion);
          matrix_scale(E,nsc);
          matrix_type * Et = matrix_alloc_transpose( E );
@@ -428,7 +434,7 @@ void ies_enkf_updateA( void * module_data,
          enkf_linalg_lowrankCinv( S , Cee , X1 , eig , truncation , subspace_dimension);
          matrix_free( Et );
          matrix_free( Cee );
-      } else if (ies_inversion == 1){
+      } else if (ies_inversion == IES_INVERSION_SUBSPACE_EXACT_R){
          fprintf(log_fp,"Subspace inversion using 'exact' full R. (ies_inversion=%d)\n",ies_inversion);
          matrix_scale(R,nsc*nsc); // since enkf_linalg_lowrankCinv solves (SS' + (N-1) R)^{-1}
          if (dbg) matrix_pretty_fprint_submat(R,"R","%11.5f",log_fp,0,m_nrobs,0,m_nrobs) ;
@@ -456,7 +462,7 @@ void ies_enkf_updateA( void * module_data,
       matrix_free( X1 );
       matrix_free( X3 );
 
-   } else if (ies_inversion == 0) {
+   } else if (ies_inversion == IES_INVERSION_EXACT) {
       fprintf(log_fp,"Exact inversion using diagonal R=I. (ies_inversion=%d)\n",ies_inversion);
       matrix_type * Z      = matrix_alloc( ens_size , ens_size  );  // Eigen vectors of S'S+I
       matrix_type * StH    = matrix_alloc( ens_size , ens_size );
@@ -604,7 +610,7 @@ bool ies_enkf_set_int( void * arg , const char * var_name , int value) {
       ies_enkf_config_set_enkf_subspace_dimension(config , value);
     else if (strcmp( var_name , ITER_KEY) == 0)
       ies_enkf_data_set_iteration_nr( module_data , value );
-    else if (strcmp( var_name , IES_INVERSION_KEY) == 0)
+    else if (strcmp( var_name , IES_INVERSION_KEY) == 0)  // This should probably translate string value - now it goes directly on the value of the ies_inversion_type enum.
       ies_enkf_config_set_ies_inversion( config , value );
     else
       name_recognized = false;
