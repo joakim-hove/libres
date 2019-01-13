@@ -26,6 +26,14 @@ extern "C" {
 #endif
 
 
+typedef enum {
+  IES_INVERSION_EXACT = 0,
+  IES_INVERSION_SUBSPACE_EXACT_R = 1,
+  IES_INVERSION_SUBSPACE_EE_R = 2,
+  IES_INVERSION_SUBSPACE_RE = 3
+} ies_inversion_type;
+
+
 typedef struct ies_enkf_config_struct ies_enkf_config_type;
 
 
@@ -50,8 +58,8 @@ typedef struct ies_enkf_config_struct ies_enkf_config_type;
   int    ies_enkf_config_get_max_gauss_newton_it( ies_enkf_config_type * config );
   void   ies_enkf_config_set_max_gauss_newton_it( ies_enkf_config_type * config , int max_gauss_newton_it);
 
-  int    ies_enkf_config_get_ies_inversion( ies_enkf_config_type * config ) ;
-  void   ies_enkf_config_set_ies_inversion( ies_enkf_config_type * config , int ies_inversion ) ;
+  ies_inversion_type ies_enkf_config_get_ies_inversion( ies_enkf_config_type * config ) ;
+  void   ies_enkf_config_set_ies_inversion( ies_enkf_config_type * config , ies_inversion_type ies_inversion ) ;
 
   bool   ies_enkf_config_get_ies_subspace( ies_enkf_config_type * config ) ;
   void   ies_enkf_config_set_ies_subspace( ies_enkf_config_type * config , bool ies_subspace ) ;

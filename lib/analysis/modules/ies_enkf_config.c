@@ -37,7 +37,7 @@
 #define DEFAULT_GAUSS_NEWTON_CONV      0.0001
 
 #define DEFAULT_IES_SUBSPACE           false
-#define DEFAULT_IES_INVERSION               1
+#define DEFAULT_IES_INVERSION          IES_INVERSION_SUBSPACE_EXACT_R
 #define DEFAULT_IES_LOGFILE            "ies.log"
 #define DEFAULT_IES_DEBUG              false
 
@@ -131,10 +131,10 @@ void ies_enkf_config_set_gauss_newton_conv( ies_enkf_config_type * config , doub
 
 /*------------------------------------------------------------------------------------------------*/
 /* IES_INVERSION          */
-int ies_enkf_config_get_ies_inversion( ies_enkf_config_type * config ) {
+ies_inversion_type ies_enkf_config_get_ies_inversion( ies_enkf_config_type * config ) {
    return config->ies_inversion;
 }
-void ies_enkf_config_set_ies_inversion( ies_enkf_config_type * config , int ies_inversion ) {
+void ies_enkf_config_set_ies_inversion( ies_enkf_config_type * config , ies_inversion_type ies_inversion ) {
    config->ies_inversion = ies_inversion;
 }
 
