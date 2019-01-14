@@ -78,7 +78,7 @@ ies_enkf_config_type * ies_enkf_config_alloc() {
 
 /*------------------------------------------------------------------------------------------------*/
 /* TRUNCATION -> SUBSPACE_DIMENSION */
-double ies_enkf_config_get_truncation( ies_enkf_config_type * config ) {
+double ies_enkf_config_get_truncation( const ies_enkf_config_type * config ) {
   return config->truncation;
 }
 
@@ -90,7 +90,7 @@ void ies_enkf_config_set_truncation( ies_enkf_config_type * config , double trun
 
 /*------------------------------------------------------------------------------------------------*/
 /* SUBSPACE_DIMENSION -> TRUNCATION */
-int ies_enkf_config_get_enkf_subspace_dimension( ies_enkf_config_type * config ) {
+int ies_enkf_config_get_enkf_subspace_dimension( const ies_enkf_config_type * config ) {
   return config->subspace_dimension;
 }
 
@@ -113,7 +113,7 @@ void ies_enkf_config_set_option_flags( ies_enkf_config_type * config , long flag
 
 /*------------------------------------------------------------------------------------------------*/
 /* IES_STEPLENGTH */
-double ies_enkf_config_get_ies_steplength( ies_enkf_config_type * config ) {
+double ies_enkf_config_get_ies_steplength( const ies_enkf_config_type * config ) {
    return config->ies_steplength;
 }
 void ies_enkf_config_set_ies_steplength( ies_enkf_config_type * config , double ies_steplength) {
@@ -122,7 +122,7 @@ void ies_enkf_config_set_ies_steplength( ies_enkf_config_type * config , double 
 
 /*------------------------------------------------------------------------------------------------*/
 /* GAUSS_NEWTON_CONV */
-double ies_enkf_config_get_gauss_newton_conv( ies_enkf_config_type * config ) {
+double ies_enkf_config_get_gauss_newton_conv( const ies_enkf_config_type * config ) {
    return config->gauss_newton_conv;
 }
 void ies_enkf_config_set_gauss_newton_conv( ies_enkf_config_type * config , double gauss_newton_conv ) {
@@ -131,7 +131,7 @@ void ies_enkf_config_set_gauss_newton_conv( ies_enkf_config_type * config , doub
 
 /*------------------------------------------------------------------------------------------------*/
 /* IES_INVERSION          */
-ies_inversion_type ies_enkf_config_get_ies_inversion( ies_enkf_config_type * config ) {
+ies_inversion_type ies_enkf_config_get_ies_inversion( const ies_enkf_config_type * config ) {
    return config->ies_inversion;
 }
 void ies_enkf_config_set_ies_inversion( ies_enkf_config_type * config , ies_inversion_type ies_inversion ) {
@@ -141,7 +141,7 @@ void ies_enkf_config_set_ies_inversion( ies_enkf_config_type * config , ies_inve
 
 /*------------------------------------------------------------------------------------------------*/
 /* IES_SUBSPACE      */
-bool ies_enkf_config_get_ies_subspace( ies_enkf_config_type * config ) {
+bool ies_enkf_config_get_ies_subspace( const ies_enkf_config_type * config ) {
    return config->ies_subspace;
 }
 void ies_enkf_config_set_ies_subspace( ies_enkf_config_type * config , bool ies_subspace ) {
@@ -150,7 +150,7 @@ void ies_enkf_config_set_ies_subspace( ies_enkf_config_type * config , bool ies_
 
 /*------------------------------------------------------------------------------------------------*/
 /* IES_DEBUG         */
-bool ies_enkf_config_get_ies_debug( ies_enkf_config_type * config ) {
+bool ies_enkf_config_get_ies_debug( const ies_enkf_config_type * config ) {
    return config->ies_debug;
 }
 void ies_enkf_config_set_ies_debug( ies_enkf_config_type * config , bool ies_debug ) {
@@ -159,7 +159,7 @@ void ies_enkf_config_set_ies_debug( ies_enkf_config_type * config , bool ies_deb
 
 /*------------------------------------------------------------------------------------------------*/
 /* IES_LOGFILE       */
-char * ies_enkf_config_get_ies_logfile( ies_enkf_config_type * config ) {
+char * ies_enkf_config_get_ies_logfile( const ies_enkf_config_type * config ) {
    return config->ies_logfile;
 }
 void ies_enkf_config_set_ies_logfile( ies_enkf_config_type * config , const char * ies_logfile ) {

@@ -119,9 +119,6 @@ void ies_enkf_updateA( void * module_data,
 
    ies_enkf_data_type * data = ies_enkf_data_safe_cast( module_data );
    const ies_enkf_config_type * ies_config = ies_enkf_data_get_config( data );
-   const bool_vector_type * obs_mask0 = ies_enkf_data_get_obs_mask0( data );
-   const bool_vector_type * obs_mask  = ies_enkf_data_get_obs_mask( data );
-   const bool_vector_type * ens_mask  = ies_enkf_data_get_ens_mask( data );
 
    int nrobs_msk     =ies_enkf_data_get_obs_mask_size(data); // Total number of observations
    int nrobs_inp     =matrix_get_rows( Yin );                // Number of active observations input in current iteration
@@ -143,7 +140,7 @@ void ies_enkf_updateA( void * module_data,
    FILE * log_fp;
 
    ies_enkf_data_update_state_size( data, state_size );
- 
+
    if (ies_enkf_data_get_iteration_nr(data) > 3)
      ies_steplength=ies_steplength/2;
 
@@ -602,7 +599,7 @@ void ies_enkf_updateA( void * module_data,
 //**********************************************
 bool ies_enkf_set_int( void * arg , const char * var_name , int value) {
   ies_enkf_data_type * module_data = ies_enkf_data_safe_cast( arg );
-  const ies_enkf_config_type * config = ies_enkf_data_get_config( module_data );
+  ies_enkf_config_type * config = ies_enkf_data_get_config( module_data );
   {
     bool name_recognized = true;
 
@@ -636,7 +633,7 @@ int ies_enkf_get_int( const void * arg, const char * var_name) {
 
 bool ies_enkf_set_string( void * arg , const char * var_name , const char * value) {
   ies_enkf_data_type * module_data = ies_enkf_data_safe_cast( arg );
-  const ies_enkf_config_type * ies_config = ies_enkf_data_get_config( module_data );
+  ies_enkf_config_type * ies_config = ies_enkf_data_get_config( module_data );
   {
     bool name_recognized = true;
 
@@ -650,7 +647,7 @@ bool ies_enkf_set_string( void * arg , const char * var_name , const char * valu
 }
 
 const char* ies_enkf_get_string( void * arg , const char * var_name ) {
-  ies_enkf_data_type * module_data = ies_enkf_data_safe_cast( arg );
+  const ies_enkf_data_type * module_data = ies_enkf_data_safe_cast( arg );
   const ies_enkf_config_type * ies_config = ies_enkf_data_get_config( module_data );
   {
     if (strcmp( var_name , IES_LOGFILE_KEY) == 0)
@@ -662,7 +659,7 @@ const char* ies_enkf_get_string( void * arg , const char * var_name ) {
 
 bool ies_enkf_set_bool( void * arg , const char * var_name , bool value) {
   ies_enkf_data_type * module_data = ies_enkf_data_safe_cast( arg );
-  const ies_enkf_config_type * ies_config = ies_enkf_data_get_config( module_data );
+  ies_enkf_config_type * ies_config = ies_enkf_data_get_config( module_data );
   {
     bool name_recognized = true;
 
@@ -695,7 +692,7 @@ bool ies_enkf_get_bool( const void * arg, const char * var_name) {
 
 bool ies_enkf_set_double( void * arg , const char * var_name , double value) {
   ies_enkf_data_type * module_data = ies_enkf_data_safe_cast( arg );
-  const ies_enkf_config_type * ies_config = ies_enkf_data_get_config( module_data );
+  ies_enkf_config_type * ies_config = ies_enkf_data_get_config( module_data );
   {
     bool name_recognized = true;
 
