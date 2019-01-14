@@ -115,7 +115,7 @@ void ies_enkf_store_initial_obs_mask(ies_enkf_data_type * data, const bool_vecto
 }
 
 void ies_enkf_update_obs_mask(ies_enkf_data_type * data, const bool_vector_type * obs_mask) {
-  if (!data->obs_mask)
+  if (data->obs_mask)
     bool_vector_free(data->obs_mask);
 
   data->obs_mask = bool_vector_alloc_copy(obs_mask);
