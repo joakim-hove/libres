@@ -95,7 +95,7 @@ int ies_enkf_data_get_iteration_nr( const ies_enkf_data_type * data ) {
 }
 
 
-const ies_enkf_config_type* ies_enkf_data_get_config(const ies_enkf_data_type * data) {
+ies_enkf_config_type* ies_enkf_data_get_config(const ies_enkf_data_type * data) {
   return data->config;
 }
 
@@ -219,7 +219,7 @@ const matrix_type * ies_enkf_data_getE(const ies_enkf_data_type * data) {
   return data->E;
 }
 
-const matrix_type * ies_enkf_data_getW(const ies_enkf_data_type * data) {
+matrix_type * ies_enkf_data_getW(const ies_enkf_data_type * data) {
   return data->W;
 }
 
