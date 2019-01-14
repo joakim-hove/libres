@@ -44,7 +44,6 @@
 #define ENKF_SUBSPACE_DIMENSION_KEY      "ENKF_SUBSPACE_DIMENSION"
 #define ENKF_TRUNCATION_KEY              "ENKF_TRUNCATION"
 #define IES_STEPLENGTH_KEY               "IES_STEPLENGTH"
-#define GAUSS_NEWTON_CONV_KEY            "GAUSS_NEWTON_CONV"
 #define ITER_KEY                         "ITER"
 
 #define IES_SUBSPACE_KEY                 "IES_SUBSPACE"
@@ -700,8 +699,6 @@ bool ies_enkf_set_double( void * arg , const char * var_name , double value) {
       ies_enkf_config_set_truncation( ies_config , value );
     else if (strcmp( var_name , IES_STEPLENGTH_KEY) == 0)
       ies_enkf_config_set_ies_steplength( ies_config , value );
-    else if (strcmp( var_name , GAUSS_NEWTON_CONV_KEY) == 0)
-      ies_enkf_config_set_gauss_newton_conv( ies_config , value );
     else
       name_recognized = false;
 
@@ -718,9 +715,6 @@ double ies_enkf_get_double( const void * arg, const char * var_name) {
 
     if (strcmp(var_name , IES_STEPLENGTH_KEY) == 0)
       return ies_enkf_config_get_ies_steplength(ies_config);
-
-    if (strcmp(var_name , GAUSS_NEWTON_CONV_KEY) == 0)
-      return ies_enkf_config_get_gauss_newton_conv(ies_config);
 
     return -1;
   }
@@ -740,8 +734,6 @@ bool ies_enkf_has_var( const void * arg, const char * var_name) {
     if (strcmp(var_name , ITER_KEY) == 0)
       return true;
     else if (strcmp(var_name , IES_STEPLENGTH_KEY) == 0)
-      return true;
-    else if (strcmp(var_name , GAUSS_NEWTON_CONV_KEY) == 0)
       return true;
     else if (strcmp(var_name , IES_SUBSPACE_KEY) == 0)
       return true;
