@@ -294,15 +294,16 @@ if (NOT BUILD_TESTS)
     return ()
 endif()
 
+set( testdata analysis/modules/tests/es_testdata.cpp )
 foreach(name ies_enkf ies_enkf_config ies_enkf_data)
-       add_executable(${name} analysis/modules/tests/${name}.c)
+       add_executable(${name} ${testdata} analysis/modules/tests/${name}.cpp)
        target_include_directories(${name} PRIVATE analysis/modules)
        target_link_libraries(${name} res ies)
        add_test(NAME ${name} COMMAND ${name})
 endforeach()
-add_executable( ies_module analysis/modules/tests/ies_enkf_module.c )
+add_executable( ies_module ${testdata} analysis/modules/tests/ies_enkf_module.cpp)
 target_link_libraries(ies_module res)
-add_test(NAME ies_module COMMAND ies_module $<TARGET_FILE:ies>)
+add_test(NAME ies_module COMMAND ies_module $<TARGET_FILE:ies> ${CMAKE_CURRENT_SOURCE_DIR}/analysis/modules/tests/test-data/poly)
 
 
 foreach(name ert_util_logh

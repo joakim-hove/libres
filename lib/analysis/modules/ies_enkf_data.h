@@ -8,6 +8,9 @@
 
 #include "ies_enkf_config.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 
 typedef struct ies_enkf_data_struct ies_enkf_data_type;
 
@@ -48,5 +51,8 @@ bool ies_enkf_data_get_AAprojection(const ies_enkf_data_type * data);
 UTIL_SAFE_CAST_HEADER(ies_enkf_data);
 UTIL_SAFE_CAST_HEADER_CONST(ies_enkf_data);
 
+#ifdef __cplusplus
+}
+#endif
 
 #endif
