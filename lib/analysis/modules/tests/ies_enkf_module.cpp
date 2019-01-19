@@ -4,13 +4,13 @@
 #include <ert/analysis/analysis_module.hpp>
 #include <ert/analysis/std_enkf.hpp>
 
-#include "es_testdata.hpp"
+#include <ert/res_util/es_testdata.hpp>
 
 void test_steplength1(const char * module_lib, const char * path_testdata) {
   res::es_testdata testdata(path_testdata);
   rng_type * rng = rng_alloc( MZRAN, INIT_DEFAULT );
   matrix_type * X = matrix_alloc(testdata.active_ens_size, testdata.active_ens_size);
-  matrix_type * prior = nullptr;
+  matrix_type * prior = testdata.alloc_matrix("A0", testdata.state_size, testdata.active_ens_size);
   bool_vector_type * ens_mask = bool_vector_alloc(testdata.active_ens_size, true);
   bool_vector_type * obs_mask = bool_vector_alloc(testdata.active_obs_size, true);
 
