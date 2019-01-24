@@ -37,7 +37,7 @@ class AnalysisModule(BaseCClass):
     _get_int             = ResPrototype("int analysis_module_get_int(analysis_module, char*)")
     _get_bool            = ResPrototype("bool analysis_module_get_bool(analysis_module, char*)")
     _get_str             = ResPrototype("char* analysis_module_get_ptr(analysis_module, char*)")
-    _init_update         = ResPrototype("void analysis_module_init_update(analysis_module, bool_vector, matrix, matrix, matrix, matrix, matrix, rng)")
+    _init_update         = ResPrototype("void analysis_module_init_update(analysis_module, bool_vector, bool_vector, matrix, matrix, matrix, matrix, matrix, rng)")
     _updateA             = ResPrototype("void analysis_module_updateA(analysis_module, matrix, matrix, matrix, matrix, matrix, matrix, void*, rng)")
     _initX               = ResPrototype("void analysis_module_initX(analysis_module, matrix, matrix, matrix, matrix, matrix, matrix, matrix, rng)")
 
@@ -49,7 +49,7 @@ class AnalysisModule(BaseCClass):
         "IES_INVERSION": {"type": int, "description": "Inversion algorithm"},
         "IES_DEBUG": {"type": bool, "description": "Print extensive log for IES analysis steps"},
         "IES_LOGFILE": {"type": str, "description": "IES Log File"},
-        "GAUSS_NEWTON_CONV": {"type": float, "description": "Convergence Criteria for Gauss Newton Iteration"},
+        "IES_AAPROJECTION": {"type": str, "description": "Include projection Y (A^+A) for n<N-1"},
         "LAMBDA0": {"type": float, "description": "Initial Lambda"},
         "USE_PRIOR": {"type": bool, "description": "Use both Prior and Observation Variability"},
         "LAMBDA_REDUCE": {"type": float, "description": "Lambda Reduction Factor"},
@@ -180,8 +180,8 @@ class AnalysisModule(BaseCClass):
         return self._get_str(var)
 
 
-    def initUpdate(self, mask, S, R, dObs, E, D, rng):
-        self._init_update(mask, S, R, dObs, E, D, rng)
+    def initUpdate(self, ens_mask, obs_mask, S, R, dObs, E, D, rng):
+        self._init_update(ens_mask, obs_mask, S, R, dObs, E, D, rng)
 
 
     def updateA(self, A, S, R, dObs, E, D, rng):

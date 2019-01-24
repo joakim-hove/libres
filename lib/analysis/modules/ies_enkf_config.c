@@ -37,7 +37,8 @@
 #define DEFAULT_IES_SUBSPACE           false
 #define DEFAULT_IES_INVERSION          IES_INVERSION_SUBSPACE_EXACT_R
 #define DEFAULT_IES_LOGFILE            "ies.log"
-#define DEFAULT_IES_DEBUG              false
+#define DEFAULT_IES_DEBUG              true
+#define DEFAULT_IES_AAPROJECTION       false
 
 
 
@@ -50,9 +51,10 @@ struct ies_enkf_config_struct {
   long      option_flags;
   double    ies_steplength;        // Controlled by config key: DEFAULT_IES_STEPLENGTH_KEY
   bool      ies_subspace;          // Controlled by config key: DEFAULT_IES_SUBSPACE
-  int       ies_inversion;              // Controlled by config key: DEFAULT_IES_INVERSION
+  int       ies_inversion;         // Controlled by config key: DEFAULT_IES_INVERSION
   char    * ies_logfile;           // Controlled by config key: DEFAULT_IES_LOGFILE
   bool      ies_debug;             // Controlled by config key: DEFAULT_IES_DEBUG
+  bool      ies_aaprojection;      // Controlled by config key: DEFAULT_IES_AAPROJECTION
 };
 
 
@@ -68,6 +70,7 @@ ies_enkf_config_type * ies_enkf_config_alloc() {
   ies_enkf_config_set_ies_inversion( config , DEFAULT_IES_INVERSION );
   ies_enkf_config_set_ies_logfile( config , DEFAULT_IES_LOGFILE );
   ies_enkf_config_set_ies_debug( config , DEFAULT_IES_DEBUG );
+  ies_enkf_config_set_ies_aaprojection( config , DEFAULT_IES_AAPROJECTION );
 
   return config;
 }
@@ -145,13 +148,21 @@ void ies_enkf_config_set_ies_debug( ies_enkf_config_type * config , bool ies_deb
 }
 
 /*------------------------------------------------------------------------------------------------*/
+/* IES_AAPROJECTION         */
+bool ies_enkf_config_get_ies_aaprojection( const ies_enkf_config_type * config ) {
+   return config->ies_aaprojection;
+}
+void ies_enkf_config_set_ies_aaprojection( ies_enkf_config_type * config , bool ies_aaprojection ) {
+   config->ies_aaprojection = ies_aaprojection;
+}
+
+/*------------------------------------------------------------------------------------------------*/
 /* IES_LOGFILE       */
 char * ies_enkf_config_get_ies_logfile( const ies_enkf_config_type * config ) {
    return config->ies_logfile;
 }
 void ies_enkf_config_set_ies_logfile( ies_enkf_config_type * config , const char * ies_logfile ) {
    config->ies_logfile = util_realloc_string_copy( config->ies_logfile , ies_logfile );
-//   config->ies_logfile = util_alloc_string_copy( ies_logfile );
 }
 
 /*------------------------------------------------------------------------------------------------*/

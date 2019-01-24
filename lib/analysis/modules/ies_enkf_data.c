@@ -46,7 +46,6 @@ struct ies_enkf_data_struct {
    matrix_type * E;                   // Prior ensemble of measurement perturations (should be the same for all iterations)
    bool      converged;               // GN has converged
    ies_enkf_config_type * config;     // This I don't understand but I assume I include data from the ies_enkf_config_type defined in ies_enkf_config.c
-   bool      AAprojection;            // For including the AAprojection of Y
    FILE*     log_fp;                  // logfile id
 };
 
@@ -70,7 +69,6 @@ void * ies_enkf_data_alloc( rng_type * rng) {
   data->E                    = NULL;
   data->converged            = false;
   data->config               = ies_enkf_config_alloc();
-  data->AAprojection         = true;
   data->log_fp               = NULL;
   return data;
 }
@@ -153,7 +151,7 @@ FILE * ies_enkf_data_open_log(ies_enkf_data_type * data) {
   if (data->iteration_nr == 1){
     fp = fopen(ies_logfile, "w");
   } else {
-      fp = fopen(ies_logfile, "a");
+    fp = fopen(ies_logfile, "a");
   }
   data->log_fp = fp;
   return fp;
@@ -171,6 +169,7 @@ void ies_enkf_data_store_initialE(ies_enkf_data_type * data, const matrix_type *
     bool dbg = ies_enkf_config_get_ies_debug( data->config ) ;
     fprintf(data->log_fp,"Allocating and assigning data->E \n");
     data->E = matrix_alloc_copy(E0);
+    dbg=false;
     if (dbg)
       matrix_pretty_fprint(data->E,"data->E","%11.5f",data->log_fp);
   }
@@ -182,6 +181,7 @@ void ies_enkf_data_store_initialA(ies_enkf_data_type * data, const matrix_type *
     bool dbg = ies_enkf_config_get_ies_debug( data->config ) ;
     fprintf(data->log_fp,"Allocating and assigning data->A0 \n");
     data->A0 = matrix_alloc_copy(A);
+    dbg=false;
     if (dbg)
       matrix_pretty_fprint(data->A0,"Ini data->A0","%11.5f",data->log_fp);
   }
@@ -196,6 +196,7 @@ void ies_enkf_data_allocateW(ies_enkf_data_type * data, int ens_size) {
     fprintf(data->log_fp,"Allocating data->W\n");
     data->W=matrix_alloc(ens_size , ens_size);
     matrix_set(data->W , 0.0) ;
+    dbg=false;
     if (dbg)
       matrix_pretty_fprint(data->W,"Ini data->W","%11.5f",data->log_fp);
   }
@@ -225,8 +226,4 @@ matrix_type * ies_enkf_data_getW(const ies_enkf_data_type * data) {
 
 const matrix_type * ies_enkf_data_getA0(const ies_enkf_data_type * data) {
   return data->A0;
-}
-
-bool ies_enkf_data_get_AAprojection(const ies_enkf_data_type * data) {
-  return data->AAprojection;
 }

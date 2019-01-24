@@ -106,7 +106,7 @@ matrix_type * safe_copy(const matrix_type * m) {
 
 
 
-matrix_type * es_testdata::alloc_matrix(const std::string& fname, int rows, int columns) {
+matrix_type * es_testdata::alloc_matrix(const std::string& fname, int rows, int columns) const {
   pushd tmp_path(this->path);
 
   matrix_type * m = alloc_load(fname, rows, columns);
@@ -114,7 +114,7 @@ matrix_type * es_testdata::alloc_matrix(const std::string& fname, int rows, int 
 }
 
 
-void es_testdata::save_matrix(const std::string& name, const matrix_type * m) {
+void es_testdata::save_matrix(const std::string& name, const matrix_type * m) const {
   pushd tmp_path(this->path);
 
   FILE * stream = util_fopen(name.c_str(), "w");
@@ -132,6 +132,18 @@ es_testdata::es_testdata(const matrix_type* S, const matrix_type * R, const matr
     active_obs_size(matrix_get_rows(S))
 {
 }
+
+es_testdata::es_testdata(const char * path, const matrix_type* S, const matrix_type * R, const matrix_type * dObs, const matrix_type *D , const matrix_type * E)
+    : path(path),
+      S(safe_copy(S)),
+      R(safe_copy(R)),
+      dObs(safe_copy(dObs)),
+      D(safe_copy(D)),
+      E(safe_copy(E)),
+      active_ens_size(matrix_get_columns(S)),
+      active_obs_size(matrix_get_rows(S))
+  {
+  }
 
 es_testdata::es_testdata(const char * path) :
   path(path),
@@ -193,6 +205,9 @@ void es_testdata::save(const std::string& path) const {
     save_matrix_data("dObs", dObs);
 }
 
+void es_testdata::save() const {
+  this->save(this->path);
+}
 
 /*
   This function will allocate a matrix based on data found on disk. The data on
@@ -201,7 +216,7 @@ void es_testdata::save(const std::string& path) const {
   of this->active_ens_size.
 */
 
-matrix_type * es_testdata::alloc_state(const std::string& name) {
+matrix_type * es_testdata::alloc_state(const std::string& name) const {
   std::vector<double> data;
   {
     pushd tmp_path(this->path);

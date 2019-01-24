@@ -46,8 +46,6 @@ const matrix_type * ies_enkf_data_getE(const ies_enkf_data_type * data);
 const matrix_type * ies_enkf_data_getA0(const ies_enkf_data_type * data);
 matrix_type * ies_enkf_data_getW(const ies_enkf_data_type * data);
 
-bool ies_enkf_data_get_AAprojection(const ies_enkf_data_type * data);
-
 UTIL_SAFE_CAST_HEADER(ies_enkf_data);
 UTIL_SAFE_CAST_HEADER_CONST(ies_enkf_data);
 
