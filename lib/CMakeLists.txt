@@ -294,7 +294,6 @@ install(TARGETS rml_enkf
 if (NOT BUILD_TESTS)
     return ()
 endif()
-
 foreach(name ies_enkf_config ies_enkf_data)
        add_executable(${name} analysis/modules/tests/${name}.cpp)
        target_include_directories(${name} PRIVATE analysis/modules)
@@ -319,6 +318,21 @@ add_executable(ies_iteration analysis/modules/tests/ies_iteration.cpp)
 target_include_directories(ies_iteration PRIVATE analysis/modules)
 target_link_libraries(ies_iteration $<TARGET_FILE:ies> res)
 add_test(NAME ies_iteration COMMAND ies_iteration ${CMAKE_CURRENT_SOURCE_DIR}/analysis/modules/tests/test-data/poly_normal)
+
+
+# The ies library is only mentioned as a dependency indirectly through the
+# <TARGET_FILE:ies> generator expression, seems that is not sufficient to
+# guarantee that it is indeed built in correct order; we therefor add an
+# explicit dependency here.
+foreach( ies_test ies_enkf_config
+                  ies_enkf_data
+                  ies_module
+                  ies_linalg
+                  ies_std_compare
+                  ies_iteration )
+   add_dependencies( ${ies_test} ies )
+endforeach()
+
 
 foreach(name ert_util_logh
              ert_util_arg_pack
