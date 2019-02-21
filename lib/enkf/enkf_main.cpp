@@ -50,6 +50,7 @@
 #include <ert/res_util/res_log.hpp>
 #include <ert/res_util/res_util_defaults.hpp>
 #include <ert/res_util/matrix.hpp>
+#include <ert/res_util/es_testdata.hpp>
 
 #include <ert/job_queue/job_queue.hpp>
 #include <ert/job_queue/job_queue_manager.hpp>
@@ -70,6 +71,7 @@
 #include <ert/res_util/res_util_defaults.hpp>
 #include <ert/res_util/subst_func.hpp>
 #include <ert/res_util/res_log.hpp>
+#include <ert/res_util/es_testdata.hpp>
 
 #include <ert/enkf/enkf_types.hpp>
 #include <ert/enkf/enkf_config_node.hpp>
@@ -1164,21 +1166,29 @@ static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
         // layer and fetch data which is serialized into the A matrix which is
         // buried deep into the serialize_info structure.
         enkf_main_serialize_dataset(enkf_main_get_ensemble_config(enkf_main), dataset , step2 ,  use_count , active_size , row_offset , tp , serialize_info);
-        module_info_type * module_info = enkf_main_module_info_alloc(ministep, obs_data, dataset, local_obsdata, active_size , row_offset);
 
-        if (analysis_module_check_option( module , ANALYSIS_UPDATE_A)){
-          if (analysis_module_check_option( module , ANALYSIS_ITERABLE)){
-            analysis_module_updateA( module , localA , S , R , dObs , E , D , module_info, enkf_main->shared_rng);
-          }
-          else
-            analysis_module_updateA( module , localA , S , R , dObs , E , D , module_info, enkf_main->shared_rng);
-        }
-        else {
-          if (analysis_module_check_option( module , ANALYSIS_USE_A)){
-            analysis_module_initX( module , X , localA , S , R , dObs , E , D, enkf_main->shared_rng);
+        {
+          module_info_type * module_info = enkf_main_module_info_alloc(ministep, obs_data, dataset, local_obsdata, active_size , row_offset);
+          /*res::es_testdata td("/tmp/poly_normal/", S, R, dObs, D, E);
+            td.save();
+            td.save_matrix("prior", A);
+            printf("Testdata created and stored in /tmp/poly_normal \n");
+            exit(1);
+          */
+
+          if (analysis_module_check_option( module , ANALYSIS_UPDATE_A)){
+            if (analysis_module_check_option( module , ANALYSIS_ITERABLE))
+              analysis_module_updateA( module , localA , S , R , dObs , E , D , module_info, enkf_main->shared_rng);
+            else
+              analysis_module_updateA( module , localA , S , R , dObs , E , D , module_info, enkf_main->shared_rng);
+          } else {
+            if (analysis_module_check_option( module , ANALYSIS_USE_A))
+              analysis_module_initX( module , X , localA , S , R , dObs , E , D, enkf_main->shared_rng);
+
+            matrix_inplace_matmul_mt2( A , X , tp );
           }
 
-          matrix_inplace_matmul_mt2( A , X , tp );
+          enkf_main_module_info_free( module_info );
         }
 
         // The enkf_main_deserialize_dataset() function will dismantle the A
@@ -1188,7 +1198,6 @@ static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
 
         free( active_size );
         free( row_offset );
-        enkf_main_module_info_free( module_info );
       }
     }
     hash_iter_free( dataset_iter );
