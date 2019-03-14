@@ -12,7 +12,7 @@
 void init_stdA(const res::es_testdata& testdata, matrix_type * A2) {
   rng_type * rng = rng_alloc( MZRAN, INIT_DEFAULT );
   std_enkf_data_type * std_data = static_cast<std_enkf_data_type*>(std_enkf_data_alloc());
-  std_enkf_set_truncation(std_data, 0.95);
+  std_enkf_set_truncation(std_data, 1.00);
   matrix_type * X = matrix_alloc(testdata.active_ens_size, testdata.active_ens_size);
 
   std_enkf_initX(std_data,
@@ -37,21 +37,72 @@ void cmp_std_ies(const res::es_testdata& testdata) {
   rng_type * rng = rng_alloc( MZRAN, INIT_DEFAULT );
   matrix_type * A1 = testdata.alloc_state("prior");
   matrix_type * A2 = testdata.alloc_state("prior");
+  matrix_type * S  = testdata.alloc_state("S");
+  int nrens=matrix_get_columns( A1 );
+  int ndim=matrix_get_rows( A1 );
+  int nrobs=matrix_get_rows( S );
+  float y,coeffa,coeffb,coeffc;
+
+/* Model prediction gives new S given prior S=func(A) */
+   for (int iens=0; iens< nrens; iens++){
+      for (int i=0; i < nrobs; i++){
+         coeffa=matrix_iget(A1,0,iens) ;
+         coeffb=matrix_iget(A1,1,iens) ;
+         coeffc=matrix_iget(A1,2,iens) ;
+         y=coeffa*i*i + coeffb*i + coeffc ;
+         matrix_iset_safe(S,i,iens,y) ;
+      }
+   }
+ 
+/* new S copied to testdata.S which is used by EnKF */
+  matrix_assign(testdata.S,S);
+
+/* Updating D according to new S: D=dObs+E-S*/
+  for (int i=0;i<nrens;i++){
+     matrix_copy_column(testdata.D , testdata.dObs, i , 0) ;
+  }
+  matrix_inplace_add(testdata.D,testdata.E);
+  matrix_inplace_sub(testdata.D,S);
+
 
   ies_enkf_data_type * ies_data = static_cast<ies_enkf_data_type*>(ies_enkf_data_alloc(rng));
   ies_enkf_config_type * ies_config = ies_enkf_data_get_config(ies_data);
 
-  ies_enkf_config_set_truncation(ies_config, 0.95);
-  ies_enkf_config_set_ies_steplength(ies_config, 0.50);
-  ies_enkf_config_set_ies_inversion(ies_config, IES_INVERSION_SUBSPACE_EXACT_R);
+  ies_enkf_config_set_truncation(ies_config, 1.0);
+  ies_enkf_config_set_ies_steplength(ies_config, 0.6);
+  ies_enkf_config_set_ies_inversion(ies_config, IES_INVERSION_EXACT);
   ies_enkf_config_set_ies_aaprojection(ies_config, false);
+
+/* ES solution */
+  init_stdA(testdata, A2);
 
 
   for (int iter=0; iter < num_iter; iter++) {
+      fprintf(stdout,"IES iteration   = %d\n", iter);
+
+/* Model prediction gives new S */
+      for (int iens=0; iens< nrens; iens++){
+         for (int i=0; i < nrobs; i++){
+            coeffa=matrix_iget(A1,0,iens) ;
+            coeffb=matrix_iget(A1,1,iens) ;
+            coeffc=matrix_iget(A1,2,iens) ;
+            y=coeffa*i*i + coeffb*i + coeffc ;
+            matrix_iset_safe(S,i,iens,y) ;
+         }
+      }
+
+/* Updating D according to new S: D=dObs+E-S*/
+     for (int i=0;i<nrens;i++){
+        matrix_copy_column(testdata.D , testdata.dObs, i , 0) ;
+     }
+     matrix_inplace_add(testdata.D,testdata.E);
+     matrix_inplace_sub(testdata.D,S);
+ 
+
     ies_enkf_init_update(ies_data,
                          testdata.ens_mask,
                          testdata.obs_mask,
-                         testdata.S,
+                         S,
                          testdata.R,
                          testdata.dObs,
                          testdata.E,
@@ -60,19 +111,25 @@ void cmp_std_ies(const res::es_testdata& testdata) {
 
     ies_enkf_updateA(ies_data,
                      A1,
-                     testdata.S,
+                     S,
                      testdata.R,
                      testdata.dObs,
                      testdata.E,
                      testdata.D,
                      NULL,
                      rng);
+    
+
+
+    matrix_pretty_fprint_submat(A1,"Aies","%11.5f",stdout,0,matrix_get_rows( A1 )-1,0,matrix_get_columns( A1 )-1) ;
+    matrix_pretty_fprint_submat(A2,"Astdenkf","%11.5f",stdout,0,matrix_get_rows( A2 )-1,0,matrix_get_columns( A2 )-1) ;
 
     test_assert_int_equal( ies_enkf_data_get_iteration_nr(ies_data), iter + 1);
+
+    if ( matrix_similar(A1, A2, 1e-5)) break;
   }
 
-  init_stdA(testdata, A2);
-  test_assert_true( matrix_similar(A1, A2, 1e-1));
+  test_assert_true( matrix_similar(A1, A2, 1e-5));
 
   matrix_free(A1);
   matrix_free(A2);
@@ -118,7 +175,7 @@ void test_deactivate(const char * testdata_file) {
   matrix_type * A0 = testdata.alloc_state("prior");
   matrix_type * A = matrix_alloc_copy(A0);
 
-  ies_enkf_config_set_truncation(ies_config, 0.95);
+  ies_enkf_config_set_truncation(ies_config, 1.00);
   ies_enkf_config_set_ies_steplength(ies_config, 0.50);
   ies_enkf_config_set_ies_inversion(ies_config, IES_INVERSION_SUBSPACE_EXACT_R);
   ies_enkf_config_set_ies_aaprojection(ies_config, false);
