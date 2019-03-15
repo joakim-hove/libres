@@ -141,9 +141,8 @@ void ies_enkf_updateA( void * module_data,
 
    ies_enkf_data_update_state_size( data, state_size );
 
-   if (ies_enkf_data_get_iteration_nr(data) > 3)
-     ies_steplength=ies_steplength/2;
-
+   if (ies_enkf_data_get_iteration_nr(data) > 4)
+     ies_steplength=0.75*ies_steplength;
 
    log_fp = ies_enkf_data_open_log(data);
 

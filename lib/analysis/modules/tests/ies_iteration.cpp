@@ -37,13 +37,15 @@ void cmp_std_ies(const res::es_testdata& testdata) {
   rng_type * rng = rng_alloc( MZRAN, INIT_DEFAULT );
   matrix_type * A1 = testdata.alloc_state("prior");
   matrix_type * A2 = testdata.alloc_state("prior");
-  matrix_type * S  = testdata.alloc_state("S");
+
   int nrens=matrix_get_columns( A1 );
   int ndim=matrix_get_rows( A1 );
-  int nrobs=matrix_get_rows( S );
+  int nrobs=matrix_get_rows( testdata.S );
+  matrix_type * S  = matrix_alloc( nrobs , nrens );
+
   float y,coeffa,coeffb,coeffc;
 
-/* Model prediction gives new S given prior S=func(A) */
+/* Model prediction gives new S given prior: S=func(A) */
    for (int iens=0; iens< nrens; iens++){
       for (int i=0; i < nrobs; i++){
          coeffa=matrix_iget(A1,0,iens) ;
@@ -133,6 +135,7 @@ void cmp_std_ies(const res::es_testdata& testdata) {
 
   matrix_free(A1);
   matrix_free(A2);
+  matrix_free(S);
   ies_enkf_data_free(ies_data);
   rng_free( rng );
 }
