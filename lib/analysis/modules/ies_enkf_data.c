@@ -167,10 +167,12 @@ void ies_enkf_data_store_initialE(ies_enkf_data_type * data, const matrix_type *
   if (!data->E){
     // We store the initial observation perturbations corresponding to data->obs_mask0.
     bool dbg = ies_enkf_config_get_ies_debug( data->config ) ;
+    int m_nrobs      = util_int_min(matrix_get_rows( E0 )-1, 50);
+    int m_ens_size   = util_int_min(matrix_get_columns( E0 )-1, 16);
     fprintf(data->log_fp,"Allocating and assigning data->E \n");
     data->E = matrix_alloc_copy(E0);
     if (dbg)
-      matrix_pretty_fprint(data->E,"data->E","%11.5f",data->log_fp);
+      matrix_pretty_fprint_submat(data->E,"data->E","%11.5f",data->log_fp,0,m_nrobs,0,m_ens_size);
   }
 }
 
@@ -178,24 +180,25 @@ void ies_enkf_data_store_initialA(ies_enkf_data_type * data, const matrix_type *
   if (!data->A0){
     // We store the initial ensemble to use it in final update equation                     (Line 11)
     bool dbg = ies_enkf_config_get_ies_debug( data->config ) ;
+    int m_state_size = util_int_min(matrix_get_rows( A )-1, 50);
+    int m_ens_size   = util_int_min(matrix_get_columns( A )-1, 16);
     fprintf(data->log_fp,"Allocating and assigning data->A0 \n");
     data->A0 = matrix_alloc_copy(A);
     if (dbg)
-      matrix_pretty_fprint(data->A0,"Ini data->A0","%11.5f",data->log_fp);
+      matrix_pretty_fprint_submat(data->A0,"Ini data->A0","%11.5f",data->log_fp,0,m_state_size,0,m_ens_size);
   }
 }
-
-
 
 void ies_enkf_data_allocateW(ies_enkf_data_type * data, int ens_size) {
   if (!data->W){
     // We initialize data-W which will store W for use in next iteration                    (Line 9)
     bool dbg = ies_enkf_config_get_ies_debug( data->config ) ;
+    int m_ens_size   = util_int_min(ens_size-1, 16);
     fprintf(data->log_fp,"Allocating data->W\n");
     data->W=matrix_alloc(ens_size , ens_size);
     matrix_set(data->W , 0.0) ;
     if (dbg)
-      matrix_pretty_fprint(data->W,"Ini data->W","%11.5f",data->log_fp);
+      matrix_pretty_fprint_submat(data->W,"Ini data->W","%11.5f",data->log_fp,0,m_ens_size,0,m_ens_size) ;
   }
 }
 

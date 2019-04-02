@@ -59,14 +59,26 @@
 
 
 static void printf_mask(FILE * log_fp, const char * name, const bool_vector_type * mask) {
+  fprintf(log_fp,"%10s: ",name);
+  for (int i = 0; i < bool_vector_size(mask); i++){
+    fprintf(log_fp,"%d", bool_vector_iget(mask, i));
+    if ((i+1)%10  == 0)  fprintf(log_fp,"%s"," ");
+    if ((i+1)%100 == 0)  fprintf(log_fp,"\n %9d  " ,i+1);
+  }
+  fputs("\n", log_fp);
+}
+
+/*
+static void printf_mask2(FILE * log_fp, const char * name, const bool_vector_type * mask) {
   fputs(name, log_fp);
   for (int i = 0; i < bool_vector_size(mask); i++){
     fprintf(log_fp,"%d", bool_vector_iget(mask, i));
     if ((i+1)%10  == 0)  fputs(" ", log_fp);
-    if ((i+1)%100 == 0)  fputs("\nobsmask_0:", log_fp);
+    if ((i+1)%100 == 0)  fputs("\n          ", log_fp);
   }
   fputs("\n", log_fp);
 }
+*/
 
 
 /***************************************************************************************************************
@@ -141,10 +153,17 @@ void ies_enkf_updateA( void * module_data,
 
    ies_enkf_data_update_state_size( data, state_size );
 
-   if (ies_enkf_data_get_iteration_nr(data) > 4)
+/*
+   if (ies_enkf_data_get_iteration_nr(data) > 2)
      ies_steplength=0.75*ies_steplength;
+   else if (ies_enkf_data_get_iteration_nr(data) > 4)
+     ies_steplength=0.50*ies_steplength;
+*/
 
    log_fp = ies_enkf_data_open_log(data);
+
+   ies_steplength=ies_enkf_config_get_ies_steplength(ies_config);
+   ies_steplength=ies_steplength * pow(2,-0.20*(iteration_nr-1));
 
    fprintf(log_fp,"\n\n\n***********************************************************************\n");
    fprintf(log_fp,"IES Iteration   = %d\n", iteration_nr);
@@ -543,7 +562,7 @@ void ies_enkf_updateA( void * module_data,
       int i=-1;
       const bool_vector_type * ens_mask = ies_enkf_data_get_ens_mask(data);
       const matrix_type * dataA0 = ies_enkf_data_getA0(data);
-      matrix_pretty_fprint_submat(A0,"data->A0","%11.5f",log_fp,0,m_state_size,0,m_ens_size);
+      matrix_pretty_fprint_submat(dataA0,"data->A0","%11.5f",log_fp,0,m_state_size,0,m_ens_size);
       matrix_pretty_fprint_submat(A,"A^f","%11.5f",log_fp,0,m_state_size,0,m_ens_size);
       for (int iens=0; iens < ens_size_msk; iens++){
          if ( bool_vector_iget(ens_mask,iens) ){
