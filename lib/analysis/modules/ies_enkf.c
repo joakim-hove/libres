@@ -153,17 +153,15 @@ void ies_enkf_updateA( void * module_data,
 
    ies_enkf_data_update_state_size( data, state_size );
 
-/*
-   if (ies_enkf_data_get_iteration_nr(data) > 2)
-     ies_steplength=0.75*ies_steplength;
-   else if (ies_enkf_data_get_iteration_nr(data) > 4)
-     ies_steplength=0.50*ies_steplength;
-*/
+
+   double ies_max_step=ies_enkf_config_get_ies_steplength(ies_config);
+   double ies_min_step=0.25;
+   double ies_decline_step=2.5;
+   if (ies_decline_step < 1.1) 
+      ies_decline_step=1.1;
+   ies_steplength=ies_min_step + (ies_max_step - ies_min_step)*pow(2,-(iteration_nr-1)/(ies_decline_step-1));
 
    log_fp = ies_enkf_data_open_log(data);
-
-   ies_steplength=ies_enkf_config_get_ies_steplength(ies_config);
-   ies_steplength=ies_steplength * pow(2,-0.20*(iteration_nr-1));
 
    fprintf(log_fp,"\n\n\n***********************************************************************\n");
    fprintf(log_fp,"IES Iteration   = %d\n", iteration_nr);
