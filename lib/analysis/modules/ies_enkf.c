@@ -43,7 +43,9 @@
 
 #define ENKF_SUBSPACE_DIMENSION_KEY      "ENKF_SUBSPACE_DIMENSION"
 #define ENKF_TRUNCATION_KEY              "ENKF_TRUNCATION"
-#define IES_STEPLENGTH_KEY               "IES_STEPLENGTH"
+#define IES_MAX_STEPLENGTH_KEY           "IES_MAX_STEPLENGTH"
+#define IES_MIN_STEPLENGTH_KEY           "IES_MIN_STEPLENGTH"
+#define IES_DEC_STEPLENGTH_KEY           "IES_DEC_STEPLENGTH"
 #define ITER_KEY                         "ITER"
 
 #define IES_SUBSPACE_KEY                 "IES_SUBSPACE"
@@ -141,7 +143,7 @@ void ies_enkf_updateA( void * module_data,
    int ens_size      = matrix_get_columns( Yin );               // Number of active realizations in current iteration
    int state_size    = matrix_get_rows( A );
 
-   double ies_steplength = ies_enkf_config_get_ies_steplength(ies_config);
+//   double ies_max_steplength = ies_enkf_config_get_ies_max_steplength(ies_config);
    ies_inversion_type ies_inversion = ies_enkf_config_get_ies_inversion( ies_config );
    double truncation = ies_enkf_config_get_truncation( ies_config );
    bool ies_debug = ies_enkf_config_get_ies_debug(ies_config);
@@ -154,18 +156,18 @@ void ies_enkf_updateA( void * module_data,
    ies_enkf_data_update_state_size( data, state_size );
 
 
-   double ies_max_step=ies_enkf_config_get_ies_steplength(ies_config);
-   double ies_min_step=0.25;
-   double ies_decline_step=2.5;
+   double ies_max_step=ies_enkf_config_get_ies_max_steplength(ies_config);
+   double ies_min_step=ies_enkf_config_get_ies_min_steplength(ies_config);
+   double ies_decline_step=ies_enkf_config_get_ies_dec_steplength(ies_config);
    if (ies_decline_step < 1.1) 
       ies_decline_step=1.1;
-   ies_steplength=ies_min_step + (ies_max_step - ies_min_step)*pow(2,-(iteration_nr-1)/(ies_decline_step-1));
+   double ies_steplength=ies_min_step + (ies_max_step - ies_min_step)*pow(2,-(iteration_nr-1)/(ies_decline_step-1));
 
    log_fp = ies_enkf_data_open_log(data);
 
    fprintf(log_fp,"\n\n\n***********************************************************************\n");
    fprintf(log_fp,"IES Iteration   = %d\n", iteration_nr);
-   fprintf(log_fp,"----ies_steplength  = %f\n", ies_steplength);
+   fprintf(log_fp,"----ies_steplength  = %f --- a=%f b=%f c=%f\n", ies_steplength, ies_max_step, ies_min_step, ies_decline_step);
    fprintf(log_fp,"----ies_inversion   = %d\n", ies_inversion);
    fprintf(log_fp,"----ies_debug       = %d\n", ies_debug);
    fprintf(log_fp,"----truncation      = %f %d\n", truncation, subspace_dimension);
@@ -720,8 +722,12 @@ bool ies_enkf_set_double( void * arg , const char * var_name , double value) {
 
     if (strcmp( var_name , ENKF_TRUNCATION_KEY) == 0)
       ies_enkf_config_set_truncation( ies_config , value );
-    else if (strcmp( var_name , IES_STEPLENGTH_KEY) == 0)
-      ies_enkf_config_set_ies_steplength( ies_config , value );
+    else if (strcmp( var_name , IES_MAX_STEPLENGTH_KEY) == 0)
+      ies_enkf_config_set_ies_max_steplength( ies_config , value );
+    else if (strcmp( var_name , IES_MIN_STEPLENGTH_KEY) == 0)
+      ies_enkf_config_set_ies_min_steplength( ies_config , value );
+    else if (strcmp( var_name , IES_DEC_STEPLENGTH_KEY) == 0)
+      ies_enkf_config_set_ies_dec_steplength( ies_config , value );
     else
       name_recognized = false;
 
@@ -735,10 +741,12 @@ double ies_enkf_get_double( const void * arg, const char * var_name) {
   {
     if (strcmp(var_name , ENKF_TRUNCATION_KEY) == 0)
       return ies_enkf_config_get_truncation( ies_config );
-
-    if (strcmp(var_name , IES_STEPLENGTH_KEY) == 0)
-      return ies_enkf_config_get_ies_steplength(ies_config);
-
+    if (strcmp(var_name , IES_MAX_STEPLENGTH_KEY) == 0)
+      return ies_enkf_config_get_ies_max_steplength(ies_config);
+    if (strcmp(var_name , IES_MIN_STEPLENGTH_KEY) == 0)
+      return ies_enkf_config_get_ies_min_steplength(ies_config);
+    if (strcmp(var_name , IES_DEC_STEPLENGTH_KEY) == 0)
+      return ies_enkf_config_get_ies_dec_steplength(ies_config);
     return -1;
   }
 }
@@ -756,7 +764,11 @@ bool ies_enkf_has_var( const void * arg, const char * var_name) {
   {
     if (strcmp(var_name , ITER_KEY) == 0)
       return true;
-    else if (strcmp(var_name , IES_STEPLENGTH_KEY) == 0)
+    else if (strcmp(var_name , IES_MAX_STEPLENGTH_KEY) == 0)
+      return true;
+    else if (strcmp(var_name , IES_MIN_STEPLENGTH_KEY) == 0)
+      return true;
+    else if (strcmp(var_name , IES_DEC_STEPLENGTH_KEY) == 0)
       return true;
     else if (strcmp(var_name , IES_SUBSPACE_KEY) == 0)
       return true;

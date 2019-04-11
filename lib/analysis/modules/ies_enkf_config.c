@@ -33,7 +33,9 @@
 #define DEFAULT_ENKF_TRUNCATION        0.98
 #define DEFAULT_ENKF_SUBSPACE_DIMENSION     INVALID_SUBSPACE_DIMENSION
 
-#define DEFAULT_IES_STEPLENGTH         0.70
+#define DEFAULT_IES_MAX_STEPLENGTH     0.60
+#define DEFAULT_IES_MIN_STEPLENGTH     0.30
+#define DEFAULT_IES_DEC_STEPLENGTH     2.50
 #define DEFAULT_IES_SUBSPACE           false
 #define DEFAULT_IES_INVERSION          IES_INVERSION_SUBSPACE_EXACT_R
 #define DEFAULT_IES_LOGFILE            "ies.log"
@@ -49,7 +51,9 @@ struct ies_enkf_config_struct {
   double    truncation;            // Controlled by config key: ENKF_TRUNCATION_KEY
   int       subspace_dimension;    // Controlled by config key: ENKF_SUBSPACE_DIMENSION_KEY (-1: use Truncation instead)
   long      option_flags;
-  double    ies_steplength;        // Controlled by config key: DEFAULT_IES_STEPLENGTH_KEY
+  double    ies_max_steplength;    // Controlled by config key: DEFAULT_IES_MAX_STEPLENGTH_KEY
+  double    ies_min_steplength;    // Controlled by config key: DEFAULT_IES_MIN_STEPLENGTH_KEY
+  double    ies_dec_steplength;    // Controlled by config key: DEFAULT_IES_DEC_STEPLENGTH_KEY
   bool      ies_subspace;          // Controlled by config key: DEFAULT_IES_SUBSPACE
   int       ies_inversion;         // Controlled by config key: DEFAULT_IES_INVERSION
   char    * ies_logfile;           // Controlled by config key: DEFAULT_IES_LOGFILE
@@ -65,7 +69,9 @@ ies_enkf_config_type * ies_enkf_config_alloc() {
   ies_enkf_config_set_truncation( config , DEFAULT_ENKF_TRUNCATION);
   ies_enkf_config_set_enkf_subspace_dimension( config , DEFAULT_ENKF_SUBSPACE_DIMENSION);
   ies_enkf_config_set_option_flags( config , ANALYSIS_NEED_ED + ANALYSIS_UPDATE_A + ANALYSIS_ITERABLE + ANALYSIS_SCALE_DATA);
-  ies_enkf_config_set_ies_steplength( config , DEFAULT_IES_STEPLENGTH );
+  ies_enkf_config_set_ies_max_steplength( config , DEFAULT_IES_MAX_STEPLENGTH );
+  ies_enkf_config_set_ies_min_steplength( config , DEFAULT_IES_MIN_STEPLENGTH );
+  ies_enkf_config_set_ies_dec_steplength( config , DEFAULT_IES_DEC_STEPLENGTH );
   ies_enkf_config_set_ies_subspace( config , DEFAULT_IES_SUBSPACE );
   ies_enkf_config_set_ies_inversion( config , DEFAULT_IES_INVERSION );
   ies_enkf_config_set_ies_logfile( config , DEFAULT_IES_LOGFILE );
@@ -111,12 +117,29 @@ void ies_enkf_config_set_option_flags( ies_enkf_config_type * config , long flag
 }
 
 /*------------------------------------------------------------------------------------------------*/
-/* IES_STEPLENGTH */
-double ies_enkf_config_get_ies_steplength( const ies_enkf_config_type * config ) {
-   return config->ies_steplength;
+/* IES_MAX_STEPLENGTH */
+double ies_enkf_config_get_ies_max_steplength( const ies_enkf_config_type * config ) {
+   return config->ies_max_steplength;
 }
-void ies_enkf_config_set_ies_steplength( ies_enkf_config_type * config , double ies_steplength) {
-   config->ies_steplength = ies_steplength;
+void ies_enkf_config_set_ies_max_steplength( ies_enkf_config_type * config , double ies_max_steplength) {
+   config->ies_max_steplength = ies_max_steplength;
+}
+/*------------------------------------------------------------------------------------------------*/
+/* IES_MIN_STEPLENGTH */
+double ies_enkf_config_get_ies_min_steplength( const ies_enkf_config_type * config ) {
+   return config->ies_min_steplength;
+}
+void ies_enkf_config_set_ies_min_steplength( ies_enkf_config_type * config , double ies_min_steplength) {
+   config->ies_min_steplength = ies_min_steplength;
+}
+
+/*------------------------------------------------------------------------------------------------*/
+/* IES_DEC_STEPLENGTH */
+double ies_enkf_config_get_ies_dec_steplength( const ies_enkf_config_type * config ) {
+   return config->ies_dec_steplength;
+}
+void ies_enkf_config_set_ies_dec_steplength( ies_enkf_config_type * config , double ies_dec_steplength) {
+   config->ies_dec_steplength = ies_dec_steplength;
 }
 
 /*------------------------------------------------------------------------------------------------*/

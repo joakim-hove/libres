@@ -57,10 +57,12 @@ void test_consistency_exact_scheme_subspace_no_truncation_diagR(const res::es_te
   ies_enkf_config_type * ies_config2 = ies_enkf_data_get_config(ies_data2);
 
   ies_enkf_config_set_truncation(ies_config1, 1.0);
-  ies_enkf_config_set_ies_steplength(ies_config1, 0.6);
+  ies_enkf_config_set_ies_max_steplength(ies_config1, 0.6);
+  ies_enkf_config_set_ies_min_steplength(ies_config1, 0.6);
   ies_enkf_config_set_ies_inversion(ies_config1, IES_INVERSION_SUBSPACE_EXACT_R);
 
-  ies_enkf_config_set_ies_steplength(ies_config2, 0.6);
+  ies_enkf_config_set_ies_max_steplength(ies_config2, 0.6);
+  ies_enkf_config_set_ies_min_steplength(ies_config2, 0.6);
   ies_enkf_config_set_ies_inversion(ies_config2, IES_INVERSION_EXACT);
 
   update_exact_scheme_subspace_no_truncation_diagR(testdata, ies_data1, A1, rng);
@@ -99,11 +101,13 @@ void test_consistency_scheme_inversions(const res::es_testdata& testdata) {
   ies_enkf_config_type * ies_config2 = ies_enkf_data_get_config(ies_data2);
 
   ies_enkf_config_set_truncation(ies_config1, 0.95);
-  ies_enkf_config_set_ies_steplength(ies_config1, 0.6);
+  ies_enkf_config_set_ies_max_steplength(ies_config1, 0.6);
+  ies_enkf_config_set_ies_min_steplength(ies_config1, 0.6);
   ies_enkf_config_set_ies_inversion(ies_config1, IES_INVERSION_SUBSPACE_EE_R);
 
   ies_enkf_config_set_truncation(ies_config2, 0.95);
-  ies_enkf_config_set_ies_steplength(ies_config2, 0.6);
+  ies_enkf_config_set_ies_max_steplength(ies_config2, 0.6);
+  ies_enkf_config_set_ies_min_steplength(ies_config2, 0.6);
   ies_enkf_config_set_ies_inversion(ies_config2, IES_INVERSION_SUBSPACE_RE);
 
   update_exact_scheme_subspace_no_truncation_diagR(testdata, ies_data1, A1, rng);

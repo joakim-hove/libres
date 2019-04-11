@@ -49,8 +49,14 @@ typedef struct ies_enkf_config_struct ies_enkf_config_type;
   void ies_enkf_config_set_option_flags( ies_enkf_config_type * config , long flags);
   long ies_enkf_config_get_option_flags( const ies_enkf_config_type * config );
 
-  double ies_enkf_config_get_ies_steplength( const ies_enkf_config_type * config );
-  void   ies_enkf_config_set_ies_steplength( ies_enkf_config_type * config , double ies_steplength);
+  double ies_enkf_config_get_ies_max_steplength( const ies_enkf_config_type * config );
+  void   ies_enkf_config_set_ies_max_steplength( ies_enkf_config_type * config , double ies_max_steplength);
+
+  double ies_enkf_config_get_ies_min_steplength( const ies_enkf_config_type * config );
+  void   ies_enkf_config_set_ies_min_steplength( ies_enkf_config_type * config , double ies_min_steplength);
+
+  double ies_enkf_config_get_ies_dec_steplength( const ies_enkf_config_type * config );
+  void   ies_enkf_config_set_ies_dec_steplength( ies_enkf_config_type * config , double ies_dec_steplength);
 
   double ies_enkf_config_get_gauss_newton_conv( const ies_enkf_config_type * config );
   void   ies_enkf_config_set_gauss_newton_conv( ies_enkf_config_type * config , double gauss_newton_conv);

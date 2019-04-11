@@ -45,7 +45,9 @@ class AnalysisModule(BaseCClass):
     # The VARIABLE_NAMES field is a completly broken special case
     # which only applies to the rml module.
     VARIABLE_NAMES = {
-        "IES_STEPLENGTH": {"type": float, "description": "Step Length of Gauss Newton Iteration"},
+        "IES_MAX_STEPLENGTH": {"type": float, "description": "Max step Length of Gauss Newton Iteration"},
+        "IES_MIN_STEPLENGTH": {"type": float, "description": "Min step Length of Gauss Newton Iteration"},
+        "IES_DEC_STEPLENGTH": {"type": float, "description": "Decline of step Length in Gauss Newton Iteration"},
         "IES_INVERSION": {"type": int, "description": "Inversion algorithm"},
         "IES_DEBUG": {"type": bool, "description": "Print extensive log for IES analysis steps"},
         "IES_LOGFILE": {"type": str, "description": "IES Log File"},

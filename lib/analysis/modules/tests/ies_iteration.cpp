@@ -73,7 +73,8 @@ void cmp_std_ies(res::es_testdata& testdata) {
 
   forward_model(testdata, A1);
   ies_enkf_config_set_truncation(ies_config, 1.0);
-  ies_enkf_config_set_ies_steplength(ies_config, 0.6);
+  ies_enkf_config_set_ies_max_steplength(ies_config, 0.6);
+  ies_enkf_config_set_ies_min_steplength(ies_config, 0.6);
   ies_enkf_config_set_ies_inversion(ies_config, IES_INVERSION_EXACT);
   ies_enkf_config_set_ies_aaprojection(ies_config, false);
 
@@ -138,7 +139,8 @@ void cmp_std_ies_delrel(res::es_testdata& testdata) {
 
   forward_model(testdata, A1);
   ies_enkf_config_set_truncation(ies_config, 1.0);
-  ies_enkf_config_set_ies_steplength(ies_config, 0.6);
+  ies_enkf_config_set_ies_min_steplength(ies_config, 0.6);
+  ies_enkf_config_set_ies_max_steplength(ies_config, 0.6);
   ies_enkf_config_set_ies_inversion(ies_config, IES_INVERSION_EXACT);
   ies_enkf_config_set_ies_aaprojection(ies_config, false);
   int iens_deact = testdata.active_ens_size / 2;
@@ -273,7 +275,8 @@ void test_deactivate(const char * testdata_file) {
   matrix_type * A = matrix_alloc_copy(A0);
 
   ies_enkf_config_set_truncation(ies_config, 1.00);
-  ies_enkf_config_set_ies_steplength(ies_config, 0.50);
+  ies_enkf_config_set_ies_max_steplength(ies_config, 0.50);
+  ies_enkf_config_set_ies_min_steplength(ies_config, 0.50);
   ies_enkf_config_set_ies_inversion(ies_config, IES_INVERSION_SUBSPACE_EXACT_R);
   ies_enkf_config_set_ies_aaprojection(ies_config, false);
 
