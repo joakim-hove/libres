@@ -815,10 +815,8 @@ bool ensemble_config_has_impl_type(const  ensemble_config_type * config, const e
 
 bool ensemble_config_GEN_DATA_require_summary(const  ensemble_config_type * config) {
   bool ret = false;
-  hash_iter_type * iter = hash_iter_alloc(config->config_nodes);
-  while (!hash_iter_is_complete( iter )) {
-    const char * key = hash_iter_get_next_key(iter);
-    const enkf_config_node_type * config_node = (const enkf_config_node_type *)hash_get(config->config_nodes , key);
+  for(const auto& node_iter : config->config_nodes) {
+    const enkf_config_node_type * config_node = node_iter.second;
     if ((enkf_config_node_get_impl_type(config_node) == GEN_DATA) && (enkf_config_node_get_var_type( config_node ) != PARAMETER)) {
       const gen_data_config_type * gen_data_config_node = (const gen_data_config_type *)enkf_config_node_get_ref( config_node );
       int report_step = gen_data_config_get_max_report_step( gen_data_config_node );
@@ -828,7 +826,6 @@ bool ensemble_config_GEN_DATA_require_summary(const  ensemble_config_type * conf
       }
     }
   }
-  hash_iter_free(iter);
   return ret;
 }
 
