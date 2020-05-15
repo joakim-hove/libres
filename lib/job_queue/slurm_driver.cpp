@@ -23,7 +23,9 @@
 #include <dlfcn.h>
 #include <unistd.h>
 
+#include <cstddef>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 #include <ert/util/util.hpp>
@@ -53,6 +55,14 @@ struct SlurmJob {
 #define DEFAULT_SCANCEL_CMD   "scancel"
 #define DEFAULT_SCONTROL_CMD     "scontrol"
 #define DEFAULT_SQUEUE_CMD    "sqeueue"
+
+#define SLURM_PENDING_STATUS    "PENDING"
+#define SLURM_COMPLETED_STATUS  "COMPLETED"
+#define SLURM_RUNNING_STATUS    "RUNNING"
+#define SLURM_FAILED_STATUS     "FAILED"
+#define SLURM_CANCELED_STATUS   "CANCELLED"
+#define SLURM_COMPLETING_STATUS "COMPLETING"
+
 
 struct slurm_driver_struct {
   UTIL_TYPE_ID_DECLARATION;
@@ -229,9 +239,74 @@ void * slurm_driver_submit_job( void * __driver, const char * cmd, int num_cpu, 
 }
 
 
+static std::unordered_map<std::string, std::string> load_scontrol(const slurm_driver_type * driver, const SlurmJob * job) {
+  auto file_content = load_stdout(driver->scontrol_cmd.c_str(), {"show", "jobid", job->string_id});
+
+  std::unordered_map<std::string, std::string> options;
+  std::size_t offset = 0;
+  while(true) {
+    auto new_offset = file_content.find_first_of("\n ", offset);
+    if (new_offset == std::string::npos)
+      break;
+
+    std::string key_value = file_content.substr(offset, new_offset - offset);
+    auto split_pos = key_value.find('=');
+    if (split_pos != std::string::npos) {
+      std::string key = key_value.substr(0, split_pos);
+      std::string value = key_value.substr(split_pos + 1);
+
+      options.insert({key,value});
+    }
+    offset = file_content.find_first_not_of("\n ", new_offset);
+  }
+  return options;
+}
+
+
+
+static job_status_type slurm_driver_get_job_status_scontrol(const slurm_driver_type * driver, const SlurmJob * job) {
+  auto values = load_scontrol(driver, job);
+  const auto status_iter = values.find("JobState");
+
+  /*
+    When a job has finished running it quite quickly - the order of minutes -
+    falls out of the slurm database, and the scontrol command will not give any
+    output. In this situation we guess that the job has completed succesfully
+    and return status JOB_QUEUE_DONE. If the job has actually not succeded this
+    should be picked up the libres post run checking.
+  */
+  if (status_iter == values.end()) {
+    res_log_fwarning("The command \'scontrol show jobid %d\' gave no output for job:%d - assuming it is COMPLETED", job->job_id, job->job_id);
+    return JOB_QUEUE_DONE;
+  }
+
+  const auto& status_string = status_iter->second;
+
+  if (status_string == SLURM_PENDING_STATUS)
+    return JOB_QUEUE_PENDING;
+
+  if (status_string == SLURM_COMPLETED_STATUS)
+    return JOB_QUEUE_DONE;
+
+  if (status_string == SLURM_COMPLETING_STATUS)
+    return JOB_QUEUE_RUNNING;
+
+  if (status_string == SLURM_RUNNING_STATUS)
+    return JOB_QUEUE_RUNNING;
+
+  if (status_string == SLURM_FAILED_STATUS)
+    return JOB_QUEUE_EXIT;
+
+  if (status_string == SLURM_CANCELED_STATUS)
+    return JOB_QUEUE_IS_KILLED;
+
+  res_log_fwarning("The job status: \'%s\' for job:%s is not recognized - assuming it is RUNNING", status_string.c_str(), job->job_id);
+  return JOB_QUEUE_RUNNING;
+}
+
 job_status_type slurm_driver_get_job_status(void * __driver , void * __job) {
   slurm_driver_type * driver = slurm_driver_safe_cast( __driver );
-  return JOB_QUEUE_PENDING;
+  return slurm_driver_get_job_status_scontrol(driver, static_cast<const SlurmJob*>(__job));
 }
 
 

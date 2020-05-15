@@ -464,7 +464,8 @@ foreach(name job_status_test
 endforeach()
 
 find_program(SBATCH "sbatch")
-foreach(name job_slurm_submit)
+foreach(name job_slurm_submit
+             job_slurm_runtest)
   add_executable(${name} job_queue/tests/${name}.cpp)
   target_include_directories(${name} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/private-include)
   target_link_libraries(${name} res)
