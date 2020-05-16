@@ -22,10 +22,15 @@
 #include <pthread.h>
 #include <dlfcn.h>
 #include <unistd.h>
+#include <pwd.h>
+#include <sys/types.h>
 
 #include <cstddef>
+#include <ctime>
 #include <string>
+#include <thread>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include <ert/util/util.hpp>
@@ -50,11 +55,73 @@ struct SlurmJob {
 };
 
 
+
+class SlurmStatus {
+public:
+
+  void update(int job_id, job_status_type status) {
+    pthread_rwlock_wrlock(&this->lock);
+    this->jobs[job_id] = status;
+    pthread_rwlock_unlock(&this->lock);
+  }
+
+
+  void new_job(int job_id) {
+    this->update(job_id, JOB_QUEUE_PENDING);
+  }
+
+  static bool active_status(job_status_type status) {
+    if (status == JOB_QUEUE_RUNNING)
+      return true;
+
+    if (status == JOB_QUEUE_PENDING)
+      return true;
+
+    return false;
+  }
+
+
+  std::vector<int> squeue_update(const std::unordered_map<int, job_status_type>& squeue_jobs) {
+    std::vector<int> active_jobs;
+
+    pthread_rwlock_wrlock(&this->lock);
+    for (auto& job_pair : this->jobs) {
+      auto job_id = job_pair.first;
+      auto job_status = job_pair.second;
+
+      auto squeue_pair = squeue_jobs.find( job_id );
+      if (squeue_pair == squeue_jobs.end()) {
+        if (this->active_status(job_status))
+          active_jobs.push_back(job_id);
+      } else
+        this->jobs[job_id] = squeue_pair->second;
+    }
+    pthread_rwlock_unlock(&this->lock);
+
+    return active_jobs;
+  }
+
+
+  job_status_type get(int job_id) const {
+
+    pthread_rwlock_rdlock(&this->lock);
+    auto status = this->jobs.at(job_id);
+    pthread_rwlock_unlock(&this->lock);
+
+    return status;
+  }
+
+private:
+  std::unordered_map<int, job_status_type> jobs;
+  mutable pthread_rwlock_t lock = PTHREAD_RWLOCK_INITIALIZER;
+};
+
+
 #define SLURM_DRIVER_TYPE_ID  70555081
 #define DEFAULT_SBATCH_CMD    "sbatch"
 #define DEFAULT_SCANCEL_CMD   "scancel"
-#define DEFAULT_SCONTROL_CMD     "scontrol"
 #define DEFAULT_SQUEUE_CMD    "sqeueue"
+#define DEFAULT_SCONTROL_CMD  "scontrol"
 
 #define SLURM_PENDING_STATUS    "PENDING"
 #define SLURM_COMPLETED_STATUS  "COMPLETED"
@@ -72,7 +139,12 @@ struct slurm_driver_struct {
   std::string squeue_cmd;
   std::string scontrol_cmd;
   std::string partition;
+  std::string username;
+  mutable SlurmStatus status;
+  mutable std::time_t status_timestamp;
+  double status_timeout = 10;
 };
+
 
 static std::string load_file(const char * fname) {
     char * buffer = util_fread_alloc_file_content(fname, nullptr);
@@ -117,6 +189,10 @@ void * slurm_driver_alloc() {
   driver->scancel_cmd = DEFAULT_SCANCEL_CMD;
   driver->squeue_cmd = DEFAULT_SQUEUE_CMD;
   driver->scontrol_cmd = DEFAULT_SCONTROL_CMD;
+
+
+  auto pwname = getpwuid( geteuid() );
+  driver->username = pwname->pw_name;
   return driver;
 }
 
@@ -235,12 +311,38 @@ void * slurm_driver_submit_job( void * __driver, const char * cmd, int num_cpu, 
   if (job_id == 0)
     return nullptr;
 
+  driver->status.new_job(job_id);
   return new SlurmJob(job_id);
 }
 
 
-static std::unordered_map<std::string, std::string> load_scontrol(const slurm_driver_type * driver, const SlurmJob * job) {
-  auto file_content = load_stdout(driver->scontrol_cmd.c_str(), {"show", "jobid", job->string_id});
+static job_status_type slurm_driver_translate_status(const std::string& status_string, const std::string& string_id) {
+  if (status_string == SLURM_PENDING_STATUS)
+    return JOB_QUEUE_PENDING;
+
+  if (status_string == SLURM_COMPLETED_STATUS)
+    return JOB_QUEUE_DONE;
+
+  if (status_string == SLURM_COMPLETING_STATUS)
+    return JOB_QUEUE_RUNNING;
+
+  if (status_string == SLURM_RUNNING_STATUS)
+    return JOB_QUEUE_RUNNING;
+
+  if (status_string == SLURM_FAILED_STATUS)
+    return JOB_QUEUE_EXIT;
+
+  if (status_string == SLURM_CANCELED_STATUS)
+    return JOB_QUEUE_IS_KILLED;
+
+  res_log_fwarning("The job status: \'%s\' for job:%s is not recognized", status_string.c_str(), string_id.c_str());
+  return JOB_QUEUE_UNKNOWN;
+}
+
+
+
+static std::unordered_map<std::string, std::string> load_scontrol(const slurm_driver_type * driver, const std::string& string_id) {
+  auto file_content = load_stdout(driver->scontrol_cmd.c_str(), {"show", "jobid", string_id});
 
   std::unordered_map<std::string, std::string> options;
   std::size_t offset = 0;
@@ -263,9 +365,8 @@ static std::unordered_map<std::string, std::string> load_scontrol(const slurm_dr
 }
 
 
-
-static job_status_type slurm_driver_get_job_status_scontrol(const slurm_driver_type * driver, const SlurmJob * job) {
-  auto values = load_scontrol(driver, job);
+static job_status_type slurm_driver_get_job_status_scontrol(const slurm_driver_type * driver, const std::string& string_id) {
+  auto values = load_scontrol(driver, string_id);
   const auto status_iter = values.find("JobState");
 
   /*
@@ -276,37 +377,62 @@ static job_status_type slurm_driver_get_job_status_scontrol(const slurm_driver_t
     should be picked up the libres post run checking.
   */
   if (status_iter == values.end()) {
-    res_log_fwarning("The command \'scontrol show jobid %d\' gave no output for job:%d - assuming it is COMPLETED", job->job_id, job->job_id);
+    res_log_fwarning("The command \'scontrol show jobid %s\' gave no output for job:%s - assuming it is COMPLETED", string_id.c_str(), string_id.c_str());
     return JOB_QUEUE_DONE;
   }
 
   const auto& status_string = status_iter->second;
+  auto status = slurm_driver_translate_status(status_string, string_id);
 
-  if (status_string == SLURM_PENDING_STATUS)
-    return JOB_QUEUE_PENDING;
+  if (status == JOB_QUEUE_UNKNOWN) {
+    res_log_fwarning("The job status: \'%s\' for job:%s is not recognized - assuming it is RUNNING", status_string.c_str(), string_id.c_str());
+    status = JOB_QUEUE_RUNNING;
+  }
 
-  if (status_string == SLURM_COMPLETED_STATUS)
-    return JOB_QUEUE_DONE;
-
-  if (status_string == SLURM_COMPLETING_STATUS)
-    return JOB_QUEUE_RUNNING;
-
-  if (status_string == SLURM_RUNNING_STATUS)
-    return JOB_QUEUE_RUNNING;
-
-  if (status_string == SLURM_FAILED_STATUS)
-    return JOB_QUEUE_EXIT;
-
-  if (status_string == SLURM_CANCELED_STATUS)
-    return JOB_QUEUE_IS_KILLED;
-
-  res_log_fwarning("The job status: \'%s\' for job:%s is not recognized - assuming it is RUNNING", status_string.c_str(), job->job_id);
-  return JOB_QUEUE_RUNNING;
+  return status;
 }
+
+static job_status_type slurm_driver_get_job_status_scontrol(const slurm_driver_type * driver, int job_id) {
+  return slurm_driver_get_job_status_scontrol(driver, std::to_string(job_id));
+}
+
+static void slurm_driver_update_status_cache(const slurm_driver_type * driver) {
+  driver->status_timestamp = time( nullptr );
+  const std::string space = " \n";
+  auto squeue_output = load_stdout(driver->squeue_cmd.c_str(), {"-h", "--user=" + driver->username, "--format=%i %T"});
+  auto offset = squeue_output.find_first_not_of(space);
+
+  std::unordered_map<int, job_status_type> squeue_jobs;
+  while (offset != std::string::npos) {
+    auto id_end = squeue_output.find_first_of(space, offset);
+    auto job_string = squeue_output.substr( offset, id_end - offset);
+    int job_id = std::stoi(squeue_output.substr( offset, id_end - offset));
+
+    auto status_start = squeue_output.find_first_not_of(space, id_end + 1);
+    auto status_end = squeue_output.find_first_of(space, status_start);
+    auto status = slurm_driver_translate_status(squeue_output.substr( status_start, status_end - status_start ), std::to_string(job_id));
+
+    squeue_jobs.insert( {job_id, status} );
+    offset = squeue_output.find_first_not_of(space, status_end);
+  }
+
+  const auto& active_jobs = driver->status.squeue_update(squeue_jobs);
+  for (const auto& job_id : active_jobs) {
+    auto status = slurm_driver_get_job_status_scontrol(driver, job_id);
+    driver->status.update(job_id, status);
+  }
+}
+
+
 
 job_status_type slurm_driver_get_job_status(void * __driver , void * __job) {
   slurm_driver_type * driver = slurm_driver_safe_cast( __driver );
-  return slurm_driver_get_job_status_scontrol(driver, static_cast<const SlurmJob*>(__job));
+  const auto * job = static_cast<const SlurmJob*>(__job);
+  auto update_cache = difftime(time(nullptr), driver->status_timestamp) > driver->status_timeout;
+  if (update_cache)
+    slurm_driver_update_status_cache(driver);
+
+  return driver->status.get( job->job_id );
 }
 
 
