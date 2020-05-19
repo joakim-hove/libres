@@ -81,6 +81,24 @@ public:
   }
 
 
+  /*
+   This function is used when the status of the jobs is updated with squeue. The
+   semantics is as follows:
+
+     1. The squeue command is run and the squeue_jobs variable is filled up with
+        a job_id -> status mapping.
+
+     2. We run through all the jobs registered in the SlurmStatus object, jobs
+        which are registered in an active state (i.e. PENDING or RUNNING) which
+        are *not* included in the squeue_jobs argument must have completed and
+        fallen out of squeue update, these jobs are assembled in the active_jobs
+        variable.
+
+     3. The return value is a list of jobs which were previously registered as
+        active, but are not fallen out. Calling scope must update their status
+        with calls to scontrol.
+  */
+
   std::vector<int> squeue_update(const std::unordered_map<int, job_status_type>& squeue_jobs) {
     std::vector<int> active_jobs;
 
@@ -142,7 +160,8 @@ struct slurm_driver_struct {
   std::string username;
   mutable SlurmStatus status;
   mutable std::time_t status_timestamp;
-  double status_timeout = 10;
+  double status_timeout = DEFAULT_SQUEUE_TIMEOUT;
+  std::string status_timeout_string;
 };
 
 
@@ -189,7 +208,7 @@ void * slurm_driver_alloc() {
   driver->scancel_cmd = DEFAULT_SCANCEL_CMD;
   driver->squeue_cmd = DEFAULT_SQUEUE_CMD;
   driver->scontrol_cmd = DEFAULT_SCONTROL_CMD;
-
+  driver->status_timeout_string = std::to_string(driver->status_timeout);
 
   auto pwname = getpwuid( geteuid() );
   driver->username = pwname->pw_name;
@@ -223,6 +242,9 @@ const void * slurm_driver_get_option( const void * __driver, const char * option
   if (strcmp(option_key, SLURM_PARTITION_OPTION) == 0)
     return driver->partition.c_str();
 
+  if (strcmp(option_key, SLURM_SQUEUE_TIMEOUT_OPTION) == 0)
+    return driver->status_timeout_string.c_str();
+
   return nullptr;
 }
 
@@ -252,6 +274,16 @@ bool slurm_driver_set_option( void * __driver, const char * option_key, const vo
   if (strcmp(option_key, SLURM_PARTITION_OPTION) == 0) {
     driver->partition = static_cast<const char*>(value);
     return true;
+
+  if (strcmp(option_key, SLURM_SQUEUE_TIMEOUT_OPTION) == 0) {
+    const char * string_value = static_cast<const char *>(value);
+    double timeout;
+    if (util_sscanf_double(string_value, &timeout)) {
+      driver->status_timeout = timeout;
+      driver->status_timeout_string = string_value;
+      return true;
+    } else
+      return false;
   }
 
   return false;
@@ -264,6 +296,7 @@ void slurm_driver_init_option_list(stringlist_type * option_list) {
   stringlist_append_copy(option_list, SLURM_SCONTROL_OPTION);
   stringlist_append_copy(option_list, SLURM_SQUEUE_OPTION);
   stringlist_append_copy(option_list, SLURM_SCANCEL_OPTION);
+  stringlist_append_copy(option_list, SLURM_SQUEUE_TIMEOUT_OPTION);
 }
 
 
@@ -423,7 +456,20 @@ static void slurm_driver_update_status_cache(const slurm_driver_type * driver) {
   }
 }
 
+/*
+  Getting the status of jobs involves two different executables - 'squeue' and
+  'scontrol'. While a job is pending in the queue and when it is actually
+  running the squeue command will give the status, but as soon as the job has
+  finished running the status is no longer reported by the squeue command. This
+  is in contrast to the 'bjobs' command used in LSF, which will report EXIT and
+  DONE status also after the job has finished running.
 
+  Because of fall out of the squeue status we must keep track of which jobs are
+  running, and then query with the scontrol command for the jobs which are not
+  reported by squeue. Unfortunately also the scontrol looses jobs after a couple
+  of minutes, when this happens we have hopefully recorded the eventual status
+  of the job.
+*/
 
 job_status_type slurm_driver_get_job_status(void * __driver , void * __job) {
   slurm_driver_type * driver = slurm_driver_safe_cast( __driver );
