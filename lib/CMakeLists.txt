@@ -539,16 +539,33 @@ add_test(NAME job_queue_test
 set_tests_properties(job_queue_test PROPERTIES LABELS "SLOW_1")
 
 
-add_test(NAME job_queue_stress_test
+add_test(NAME job_queue_stress_test_LOCAL
          COMMAND job_queue_stress_test
                  $<TARGET_FILE:job_queue_stress_task>
+                 LOCAL
                  False)
-set_tests_properties(job_queue_stress_test PROPERTIES LABELS "SLOW_1")
+set_tests_properties(job_queue_stress_test_LOCAL PROPERTIES LABELS "SLOW_1")
 
-add_test(NAME job_queue_user_exit
+add_test(NAME job_queue_user_exit_LOCAL
          COMMAND job_queue_stress_test
                  $<TARGET_FILE:job_queue_stress_task>
+                 LOCAL
                  True)
+
+if (SBATCH)
+  add_test(NAME job_queue_stress_test_SLURM
+    COMMAND job_queue_stress_test
+    $<TARGET_FILE:job_queue_stress_task>
+    SLURM
+    False)
+  set_tests_properties(job_queue_stress_test_SLURM PROPERTIES LABELS "SLOW_1")
+
+  add_test(NAME job_queue_user_exit_SLURM
+    COMMAND job_queue_stress_test
+    $<TARGET_FILE:job_queue_stress_task>
+    SLURM
+    True)
+endif()
 
 add_test(NAME job_queue_timeout_test
          COMMAND job_queue_timeout_test $<TARGET_FILE:job_queue_stress_task>)
