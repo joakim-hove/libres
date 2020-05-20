@@ -140,6 +140,8 @@ private:
 #define DEFAULT_SCANCEL_CMD   "scancel"
 #define DEFAULT_SQUEUE_CMD    "sqeueue"
 #define DEFAULT_SCONTROL_CMD  "scontrol"
+#define DEFAULT_SQUEUE_TIMEOUT 10
+
 
 #define SLURM_PENDING_STATUS    "PENDING"
 #define SLURM_COMPLETED_STATUS  "COMPLETED"
@@ -274,6 +276,7 @@ bool slurm_driver_set_option( void * __driver, const char * option_key, const vo
   if (strcmp(option_key, SLURM_PARTITION_OPTION) == 0) {
     driver->partition = static_cast<const char*>(value);
     return true;
+  }
 
   if (strcmp(option_key, SLURM_SQUEUE_TIMEOUT_OPTION) == 0) {
     const char * string_value = static_cast<const char *>(value);
@@ -288,7 +291,6 @@ bool slurm_driver_set_option( void * __driver, const char * option_key, const vo
 
   return false;
 }
-
 
 void slurm_driver_init_option_list(stringlist_type * option_list) {
   stringlist_append_copy(option_list, SLURM_PARTITION_OPTION);

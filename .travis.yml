@@ -41,6 +41,7 @@ addons:
       - libopm-simulators
       - liblapack-dev
       - valgrind
+      - slurm-wlm
 
 before_install:
   - git clone https://github.com/matthew-brett/multibuild.git
@@ -74,6 +75,8 @@ before_script:
   - make
   - make install
   - popd;popd
+  - sudo ./.travis_configure_slurm
+
 
 script:
   - export PYTHONPATH="$INSTALL_DIR/lib/python$MB_PYTHON_VERSION/dist-packages:$PYTHONPATH"
