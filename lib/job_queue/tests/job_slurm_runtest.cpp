@@ -27,6 +27,7 @@
 #include <ert/util/test_work_area.hpp>
 
 #include <ert/job_queue/queue_driver.hpp>
+#include <ert/job_queue/slurm_driver.hpp>
 
 void make_sleep_job(const char * fname, int sleep_time) {
   FILE * stream = util_fopen(fname, "w");
@@ -50,7 +51,7 @@ void make_failed_job(const char * fname, int sleep_time) {
 
 
 
-void run() {
+void run(double squeue_timeout) {
   ecl::util::TestArea ta("slurm_submit", true);
   queue_driver_type * driver = queue_driver_alloc_slurm();
   std::vector<void *> jobs;
@@ -62,6 +63,8 @@ void run() {
   make_sleep_job(long_cmd, 10);
   make_sleep_job(ok_cmd, 1);
   make_failed_job(fail_cmd, 1);
+  auto squeue_timeout_string = std::to_string( squeue_timeout );
+  queue_driver_set_option(driver, SLURM_SQUEUE_TIMEOUT_OPTION, squeue_timeout_string.c_str());
 
   for (int i = 0; i < num_jobs; i++) {
     std::string run_path = ta.test_cwd() + "/" + std::to_string(i);
@@ -114,6 +117,7 @@ void run() {
 
 
 int main( int argc , char ** argv) {
-  run();
+  run(0);
+  run(2);
   exit(0);
 }
